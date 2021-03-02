@@ -392,7 +392,12 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
                      return(P99)
                    },
                    voro =.voro)
-    .tree$tls <- cbind(.tree$tls, P99 = .P99[.tree$tls[, "tree"]])
+    ## .tree$tls <- cbind(.tree$tls, P99 = .P99[.tree$tls[, "tree"]])
+
+    ####
+    .P99 <- data.frame(tree = names(.P99), P99 = .P99)
+    .tree$tls <- merge(.tree$tls, .P99, by = "tree", all = FALSE)
+    ####
 
     # Compute angular aperture
     .wide <- .tree$tls$phi.right - .tree$tls$phi.left
@@ -459,6 +464,15 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
         warning("For plot ", .id, ", 'plot.parameters$radius.max' was ",
                 "increased to ", .radius.min, " to ensure that at least one ",
                 "tree is included in all the simulated plots")
+
+      }
+
+      if (.radius.max > max(.data.tls[, "rho"])) {
+
+        .radius.max <- max(.data.tls[, "rho"])
+        warning("For plot ", .id, ", 'plot.parameters$radius.max' was ",
+                "reduced to ", .radius.max, " since it is the maximum distance in ",
+                "point cloud data")
 
       }
 

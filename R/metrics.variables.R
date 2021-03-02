@@ -195,7 +195,7 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
 
     ####
     .P99 <- data.frame(tree = names(.P99), P99 = .P99)
-    .tree.tls <- merge(.tree.tls, .P99, by = "tree")
+    .tree.tls <- merge(.tree.tls, .P99, by = "tree", all = FALSE)
     ####
 
     # Compute angular aperture

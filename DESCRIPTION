@@ -1,7 +1,7 @@
 Package: FORTLS
 Title: Automatic Processing of TLS Point Cloud Data for Forestry
         Purposes
-Version: 1.0.0
+Version: 1.0.1
 Date: 2021-02-13
 Authors@R: c(
     person("Juan Alberto", "Molina-Valero", role = c("aut", "cph", "cre"),
@@ -32,6 +32,6 @@ LinkingTo: Rcpp, RcppEigen
 Encoding: UTF-8
 RoxygenNote: 7.1.1
 NeedsCompilation: yes
-Packaged: 2021-02-26 16:01:11 UTC; Usuario
+Packaged: 2021-03-02 11:18:52 UTC; Juan
 Repository: CRAN
-Date/Publication: 2021-03-01 09:40:08 UTC
+Date/Publication: 2021-03-02 13:20:19 UTC

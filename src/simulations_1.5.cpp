@@ -189,7 +189,7 @@ DataFrame height_perc_cpp(std::vector<double> rho_seq, std::vector<double> z,
   for(int i = 0; i < n; i++){
 
     pos = find_if(rho.begin(), rho.end(),
-                  bind2nd(greater<double>(), rho_seq[i]));
+                  std::bind(std::greater<double>(), std::placeholders::_1, rho_seq[i]));
 
     percentile.assign(z.begin(), z.begin() + distance(rho.begin(), pos));
 
@@ -291,7 +291,7 @@ DataFrame fixed_area_cpp(std::vector<double> radius_seq,
   for(int i = 0; i < n; i++){
 
     pos = find_if(hdist.begin(), hdist.end(),
-                  bind2nd(greater<double>(), radius_seq[i]));
+                  std::bind(std::greater<double>(), std::placeholders::_1, radius_seq[i]));
 
     x.assign(d.begin(), d.begin() + distance(hdist.begin(), pos));
     y.assign(h.begin(), h.begin() + distance(hdist.begin(), pos));
@@ -304,7 +304,7 @@ DataFrame fixed_area_cpp(std::vector<double> radius_seq,
                                    + distance(hdist.begin(), pos));
     ef = 10000 / (PI * pow(radius_seq[i], 2.0));
     transform(factor.begin(), factor.end(), factor.begin(),
-              bind1st(multiplies<double>(), ef));
+              std::bind(multiplies<double>(), std::placeholders::_1, ef));
     partial_sum(factor.begin(), factor.end(), factor.begin());
 
     vector<double> factor_1(factor);
@@ -386,7 +386,8 @@ DataFrame k_tree_cpp(std::vector<double> k_seq,
   for(int i = 0; i < n; i++){
 
     pos = find_if(k.begin(), k.end(),
-                  bind2nd(greater<double>(), k_seq[i]));
+                  std::bind(std::greater<double>(), std::placeholders::_1, k_seq[i]));
+
 
     x.assign(d.begin(), d.begin() + distance(k.begin(), pos));
     y.assign(h.begin(), h.begin() + distance(k.begin(), pos));
@@ -399,7 +400,7 @@ DataFrame k_tree_cpp(std::vector<double> k_seq,
                                    + distance(k.begin(), pos));
     ef = 10000 / (PI * pow(radius_seq[i], 2.0));
     transform(factor.begin(), factor.end(), factor.begin(),
-              bind1st(multiplies<double>(), ef));
+              std::bind(multiplies<double>(), std::placeholders::_1, ef));
     partial_sum(factor.begin(), factor.end(), factor.begin());
 
     vector<double> factor_1(factor);
@@ -482,7 +483,7 @@ DataFrame angle_count_cpp(std::vector<double> baf_seq,
   for(int i = 0; i < n; i++){
 
     pos = find_if(baf.begin(), baf.end(),
-                  bind2nd(less<double>(), baf_seq[i]));
+                  std::bind(std::less<double>(), std::placeholders::_1, baf_seq[i]));
 
     x.assign(d.begin(), d.begin() + distance(baf.begin(), pos));
     y.assign(h.begin(), h.begin() + distance(baf.begin(), pos));
