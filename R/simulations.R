@@ -19,14 +19,17 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
     stop("'tree.list.tls' must be a data.frame")
   if (nrow(tree.list.tls) < 1)
     stop("'tree.list.tls' must have at least one row")
-  for (.i in .col.names){
-
-    if (!.i %in% colnames(tree.list.tls))
-      stop("'tree.list.tls' must have a column named '", .i,"'")
-    if (!.i %in% c("id", "file") && !is.numeric(tree.list.tls[, .i]))
-      stop("Column '", .i,"' of 'tree.list.tls' must be numeric")
-
-  }
+  .col.miss <- .col.names[!.col.names %in% colnames(tree.list.tls)]
+  if (length(.col.miss) > 0)
+    stop("'tree.list.tls' must have column(s) named: ",
+         paste("'", .col.miss, "'", sep = "", collapse = ", "))
+  .col.nonum <- .col.names[!.col.names %in% c("id", "file", "tree")]
+  .col.nonum <- .col.nonum[sapply(.col.nonum,
+                                  function(n, dat) {!is.numeric(dat[, n])},
+                                  dat = tree.list.tls)]
+  if (length(.col.nonum) > 0)
+    stop("Column(s) ", paste("'", .col.nonum, "'", sep = "", collapse = ", "),
+         " of 'tree.list.tls' must be numeric")
 
   # 'distance.sampling' must be NULL (by default) or a list with at least an
   # element named 'tree', which must be a data.frame with at least one row,
@@ -41,50 +44,71 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
       stop("'distance.sampling$tree' must be a data.frame")
     if (nrow(distance.sampling$tree) < 1)
       stop("'distance.sampling$tree' must have at least one row")
-    for (.i in .col.names){
-
-      if (!.i %in% colnames(distance.sampling$tree))
-        stop("'distance.sampling$tree' must have a column named '", .i,"'")
-      if (.i != "id" && !is.numeric(distance.sampling$tree[, .i]))
-        stop("Column '", .i, "' of 'distance.sampling$tree' must be numeric")
-
-    }
-    if (any(!unique(tree.list.tls[, "id"]) %in%
-            unique(distance.sampling$tree[, "id"])))
-      warning("There is any plot identification in 'tree.list.tls' argument ",
-              "which is missing in 'distance.sampling' argument")
-    for (.i in unique(tree.list.tls[, "id"])) {
-
-      if (any(!unique(tree.list.tls[tree.list.tls[, "id"] == .i, "tree"]) %in%
-              unique(distance.sampling$tree[distance.sampling$tree[, "id"] ==
-                                            .i, "tree"])))
-        warning("There is any tree numbering for plot ", .id, " in ",
-                "'tree.list.tls' argument which is missing in ",
-                "'distance.sampling' argument")
-
-    }
-
+    .col.miss <- .col.names[!.col.names %in% colnames(distance.sampling$tree)]
+    if (length(.col.miss) > 0)
+      stop("'distance.sampling$tree' must have column(s) named: ",
+           paste("'", .col.miss, "'", sep = "", collapse = ", "))
+    .col.nonum <- .col.names[!.col.names %in% c("id", "tree")]
+    .col.nonum <- .col.nonum[sapply(.col.nonum,
+                                    function(n, dat) {!is.numeric(dat[, n])},
+                                    dat = distance.sampling$tree)]
+    if (length(.col.nonum) > 0)
+      stop("Column(s) ", paste("'", .col.nonum, "'", sep = "", collapse = ", "),
+           " of 'distance.sampling$tree' must be numeric")
+    .id.names <- unique(tree.list.tls[, "id"])
+    .id.miss <- .id.names[!.id.names %in%
+                            unique(distance.sampling$tree[, "id"])]
+    if (length(.id.miss) > 0)
+      stop("Plot(s) ", paste("'", .id.miss, "'", sep = "", collapse = ", "),
+           " in 'tree.list.tls' argument is(are) missing in ",
+           "'distance.sampling' argument")
+    .tree.miss <- sapply(.id.names,
+                         function(id, dat1, dat2) {
+                           tree.names <-
+                             unique(dat1[dat1[, "id"] == id, "tree"])
+                           tree.miss <-
+                             tree.names[!tree.names %in%
+                                          unique(dat2[dat2[, "id"] == id,
+                                                      "tree"])]
+                           return(length(tree.miss))
+                         },
+                         dat1 = tree.list.tls, dat2 = distance.sampling$tree)
+    names(.tree.miss) <- .id.names
+    .tree.miss <- .tree.miss[.tree.miss > 0]
+    if (length(.tree.miss) > 0)
+      stop(paste(.tree.miss, " tree(s) for plot '", names(.tree.miss), "'",
+                 sep = "", collapse = ", "),
+           " in 'tree.list.tls' argument is(are) missing in ",
+           "'distance.sampling' argument")
   }
 
   # 'tree.list.field' must be a data.frame with at least one row, certain
   # mandatory columns and most of them numeric
-  .col.names <-  c("id", "tree", "dbh", "horizontal.distance", "total.height",
-                   "dead")
+  if("w" %in% colnames(tree.list.field)){
+
+  .col.names <-  c("id", "tree", "dbh", "horizontal.distance", "total.height", "w")
+
+  } else{
+
+  .col.names <-  c("id", "tree", "dbh", "horizontal.distance", "total.height")
+
+  }
+
   if (!is.data.frame(tree.list.field))
     stop("'tree.list.field' must be a data.frame")
   if (nrow(tree.list.field) < 1)
     stop("'tree.list.field' must have at least one row")
-  for (.i in .col.names){
-
-    if (!.i %in% colnames(tree.list.field))
-      stop("'tree.list.field' must have a column named '", .i,"'")
-    if (.i != "id" && !is.numeric(tree.list.field[, .i]))
-      stop("Column '", .i,"' of 'tree.list.field' must be numeric")
-
-  }
-  if (any(!unique(tree.list.tls[, "id"]) %in% unique(tree.list.field[, "id"])))
-    stop("There is any plot identification in 'tree.list.tls' argument ",
-         "which is missing in 'tree.list.field' argument")
+  .col.miss <- .col.names[!.col.names %in% colnames(tree.list.field)]
+  if (length(.col.miss) > 0)
+    stop("'tree.list.field' must have column(s) named: ",
+         paste("'", .col.miss, "'", sep = "", collapse = ", "))
+  .col.nonum <- .col.names[!.col.names %in% c("id", "tree")]
+  .col.nonum <- .col.nonum[sapply(.col.nonum,
+                                  function(n, dat) {!is.numeric(dat[, n])},
+                                  dat = tree.list.field)]
+  if (length(.col.nonum) > 0)
+    stop("Column(s) ", paste("'", .col.nonum, "'", sep = "", collapse = ", "),
+         " of 'tree.list.field' must be numeric")
 
   # 'plot.parameters' must be list(radius.max = 25, k.tree.max = 50,
   # BAF.max = 4) (by default) or a list with all or any of the numeric and
@@ -233,12 +257,19 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
                      paste(names(z), "0", "tls", sep = "."),
 
                      # Height percentiles (m)
-                     sprintf("P%02i", 100 * .prob))
+                     sprintf("P%02i", 100 * .prob),
+
+                     # Points metrics
+                     "mean","max","min","sd","var","mode","kurtosis","skewness",
+                     "perc_on_mode", "perc_on_mean", "weibull_c", "weibull_b")
                  },
                  y = .ef.names, z = .mean.names, simplify = FALSE),
     field = c(
       # Density (trees/ha), basal area (m2/ha) and volume (m3/ha)
       "N", "G", "V",
+
+      # and Biomass (Mg/ha)
+      if("w" %in% colnames(tree.list.field)) "W",
 
       # Mean diameters (cm), and mean heights (m)
       paste(names(.mean.names), sep = "."),
@@ -312,32 +343,83 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
 
 
   # Select field plots with available TLS data from the trees' database, and
-  # remove dead trees, and trees with missing height or missing dbh
-  tree.list.field <-
-    tree.list.field[tree.list.field$id %in% unique(tree.list.tls$id) &
-                      is.na(tree.list.field$dead) &
-                      !is.na(tree.list.field$total.height) &
-                      !is.na(tree.list.field$dbh), , drop = FALSE]
+  # remove trees with missing height or missing dbh
+  .id.names <- unique(tree.list.field[, "id"])
+  .id.miss <- .id.names[!.id.names %in% unique(tree.list.tls[, "id"])]
+  if (length(.id.miss) > 0) {
+
+    warning("Plot(s) ", paste("'", .id.miss, "'", sep = "", collapse = ", "),
+            " in 'tree.list.field' argument is(are) missing in ",
+            "'tree.list.tls' argument. It(them) was(were) not taken into ",
+            "account during the execution")
+    tree.list.field <- tree.list.field[!tree.list.field[, "id"] %in% .id.miss, ,
+                                       drop = FALSE]
+
+  }
+  .h.miss <- is.na(tree.list.field[, "total.height"])
+  if (sum(.h.miss) > 0) {
+
+    warning(sum(.h.miss), " tree(s) in 'tree.list.field' argument has(have) ",
+            "missing 'total.heigth' values. It(them) was(were) not taken into ",
+            "account during the execution")
+    tree.list.field <- tree.list.field[!.h.miss, , drop = FALSE]
+
+  }
+  .d.miss <- is.na(tree.list.field[, "dbh"])
+  if (sum(.d.miss) > 0) {
+
+    warning(sum(.d.miss), " tree(s) in 'tree.list.field' argument has(have) ",
+            "missing 'dbh' values. It(them) was(were) not taken into account ",
+            "during the execution")
+    tree.list.field <- tree.list.field[!.d.miss, , drop = FALSE]
+
+  }
 
   # Select only columns required for calculations below
+  if(is.null(tree.list.field$w)){
+
+    tree.list.field <- tree.list.field[, c("id", "tree", "horizontal.distance",
+                                           "dbh", "total.height"), drop = FALSE]
+
+    } else {
+
   tree.list.field <- tree.list.field[, c("id", "tree", "horizontal.distance",
-                                         "dbh", "total.height"), drop = FALSE]
+                                         "dbh", "total.height", "w"), drop = FALSE]
+
+  }
+
 
   # Define TXT files list
-  .files <- unique(tree.list.tls$file)
-  .files.exists <- .files %in% list.files(pattern = "txt", path = dir.data)
-  if (all(!.files.exists)) {
 
-    warning("None of the TXT files in 'tree.list.tls' is available in ",
-            "'dir.data', so no computation will be done")
-  }
-  else if (any(!.files.exists)) {
+  # Obtain initial TXT files list
+  .files <- unique(tree.list.tls[, "file"])
 
-    warning(sum(!.files.exists), " TXT files in 'tree.list.tls' are ",
-            "missing in 'dir.data', so no computation will be done for them")
-
-  }
+  # Check if TXT files exist
+  .files.exists <- file.exists(file.path(dir.data, .files))
+  if (all(!.files.exists))
+    warning("None of the TXT files in 'tree.list.tls' argument is available ",
+            "in 'dir.data', so no computation will be done")
+  else if (any(!.files.exists))
+    warning(sum(!.files.exists), " TXT file(s) in 'tree.list.tls' argument ",
+            "is(are) missing in 'dir.data'. This(these) plot(s) was(were) not ",
+            "taken into account during the execution")
   .files <- .files[.files.exists]
+
+  # Check if field data exist
+  .id.names <- unique(tree.list.tls[tree.list.tls[, "file"] %in% .files, "id"])
+  .id.miss <- .id.names[!.id.names %in% unique(tree.list.field[, "id"])]
+  if (length(.id.miss) == length(.id.names))
+    warning("All plots in 'tree.list.tls' argument is(are) missing in ",
+            "'tree.list.field' argument, so no computation will be done")
+  else if (length(.id.miss) > 0)
+    warning("Plot(s) ", paste("'", .id.miss, "'", sep = "", collapse = ", "),
+            " in 'tree.list.tls' argument is(are) missing in ",
+            "'tree.list.field' argument. This(these) plot(s) was(were) not ",
+            "taken into account during the execution")
+  .files <- tree.list.tls[tree.list.tls[, "file"] %in% .files &
+                            !tree.list.tls[, "id"] %in% .id.miss, "file"]
+  .files <-unique(.files)
+
 
   # Loop for each TLS plot
   for (.i in .files) {
@@ -359,10 +441,12 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
 
 
     .distSampling <- distance.sampling
-    if (!is.null(.distSampling))
+    if (!is.null(.distSampling)) {
+
       .distSampling <-
-      as.matrix(distance.sampling$tree[distance.sampling$tree$id == .id, ,
-                                       drop = FALSE])
+        distance.sampling$tree[distance.sampling$tree$id == .id, , drop = FALSE]
+
+    }
 
 
     # Create points' database and trees' database for plot .id - TLS data ----
@@ -416,11 +500,11 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
     .wide <- ifelse(.wide < 0, (2 * pi) + .wide, .wide)
     .tree$tls <- cbind(.tree$tls, wide = .wide)
 
-    # Select only columns required for calculations below, and convert to matrix
+    # Select only columns required for calculations below
     .col.names <- c("tree", "horizontal.distance", "dbh", "num.points",
                     "num.points.hom", "num.points.est", "num.points.hom.est",
                     "partial.occlusion", "wide", "P99")
-    .tree$tls <- as.matrix(.tree$tls[ , .col.names, drop = FALSE])
+    .tree$tls <- .tree$tls[ , .col.names, drop = FALSE]
     rownames(.tree$tls) <- NULL
 
     # Order by horizontal distance, and compute variables/metrics: density,
@@ -436,10 +520,14 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
     # Create trees' database for plot .id - Field data ----
 
 
-    # Select only columns required for calculations below, and convert to matrix
+    # Select only columns required for calculations below
     .tree$field <- tree.list.field[tree.list.field$id == .id, , drop = FALSE]
-    .col.names <- c("tree", "horizontal.distance", "dbh", "total.height")
-    .tree$field <- as.matrix(.tree$field[ , .col.names, drop = FALSE])
+    if(is.null(tree.list.field$w)){
+      .col.names <- c("tree", "horizontal.distance", "dbh", "total.height")} else {
+            .col.names <- c("tree", "horizontal.distance", "dbh", "total.height", "w")
+      }
+
+    .tree$field <- .tree$field[ , .col.names, drop = FALSE]
     rownames(.tree$field) <- NULL
 
     # Order by horizontal distance, and compute variables/metrics: density,
@@ -492,8 +580,8 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
       for (.j in names(fixed.area.plot)) {
 
         # Compute a radius sequence, select trees according to maximum radius,
-        # compute accumulated number of points, and create a matrix containing
-        # the trees' data for each radius value
+        # compute accumulated number of points, and create a data.frame
+        # containing the trees' data for each radius value
         .fixedAreaPlot <-
           .radius.fixed.area.calculation(radius.min = .radius.min,
                                          radius.increment = .radius.increment,
@@ -518,12 +606,18 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
                                                  dec = .num.dec)
 
         # Compute mean dominant diameters and heights for each radius value
+        .tree.2 <- .tree[[.j]]
+
+        if(.j == "field"){
+        .tree.2 <- .tree.2[which(.tree.2$total.height >= 1.3), ]
+        }
+
         .dh.0 <- fixed_area_cpp(radius_seq = .fixedAreaPlot[, "radius"],
-                                hdist = .tree[[.j]][, "horizontal.distance"],
-                                d = .tree[[.j]][, "dbh"],
-                                h = .tree[[.j]][, switch(.j, tls = "P99",
-                                                         field =
-                                                           "total.height")],
+                                hdist = .tree.2[, "horizontal.distance"],
+                                d = .tree.2[, "dbh"],
+                                h = .tree.2[, switch(.j, tls = "P99",
+                                                     field =
+                                                     "total.height")],
                                 num = .num)
         rownames(.dh.0) <- .format.numb(x = .dh.0[, "radius"], dec = .num.dec)
         .dh.0 <- as.matrix(.dh.0[, colnames(.dh.0) != "radius", drop = FALSE])
@@ -542,9 +636,16 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
                                           dec = .num.dec)
           .perc <- as.matrix(.perc[, colnames(.perc) != "rho_seq",
                                    drop = FALSE])
+
+          .pts.met <- .points.metrics(rho_seq = .fixedAreaPlot[, "radius"],
+                                      data = .data.tls)
+
           .fixedAreaPlot <- cbind(.fixedAreaPlot,
                                   .perc[rownames(.fixedAreaPlot), ,
                                         drop = FALSE])
+
+          .fixedAreaPlot <- cbind(.fixedAreaPlot, as.matrix(.pts.met))
+
         }
 
         # Convert diameters from International System of Units (m) to cm
@@ -621,9 +722,16 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
                            },
                            x = .rad.seq)
         # Compute mean dominant diameters and heights for each k value
+        .tree.2 <- .tree[[.j]]
+
+        if(.j == "field"){
+          .tree.2 <- .tree.2[which(.tree.2$total.height >= 1.3), ]
+        }
+
+
         .dh.0 <- k_tree_cpp(k_seq = .kTreePlot[, "k"], radius_seq = .rad.seq,
-                            k = .tree[[.j]][, "n"], d = .tree[[.j]][, "dbh"],
-                            h = .tree[[.j]][, switch(.j, tls = "P99",
+                            k = .tree.2[, "n"], d = .tree[[.j]][, "dbh"],
+                            h = .tree.2[, switch(.j, tls = "P99",
                                                      field = "total.height")],
                             num = .num)
         rownames(.dh.0) <- .format.numb(x = .dh.0[, "k"], dec = .num.dec)
@@ -641,8 +749,14 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
           rownames(.perc) <- names(.rad.seq)
           .perc <- as.matrix(.perc[, colnames(.perc) != "rho_seq",
                                    drop = FALSE])
+
+          .pts.met <- .points.metrics(rho_seq = .rad.seq, data = .data.tls)
+
           .kTreePlot <- cbind(.kTreePlot,
                               .perc[rownames(.kTreePlot), , drop = FALSE])
+
+          .kTreePlot <- cbind(.kTreePlot, as.matrix(.pts.met))
+
 
         }
 
@@ -691,13 +805,12 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
                 "all the simulated plots")
 
       }
+      if (.BAF.min > .BAF.max) {
 
-      if (min(.BAF.rang[1, ]) > .BAF.max) {
-
-        .BAF.max <- max(.BAF.rang[1, ])
-        warning("For plot ", .id, ", 'plot.parameters$BAF.max' was increased to ",
-                .BAF.max, " to ensure that at least one tree is included in ",
-                "all the simulated plots")
+        .BAF.max <- .BAF.min
+        warning("For plot ", .id, ", 'plot.parameters$BAF.max' was increased ",
+                "to ", .BAF.max, " to ensure that at least one tree is ",
+                "included in all the simulated plots")
 
       }
 
@@ -719,11 +832,20 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
                                                   dec = .num.dec)
 
         # Compute mean dominant diameters and heights for each BAF value
-        .BAF.order <- order(.tree[[.j]][, "BAF"], decreasing = TRUE)
+
+        .tree.2 <- .tree[[.j]]
+
+        if(.j == "field"){
+          .tree.2 <- .tree.2[which(.tree.2$total.height >= 1.3), ]
+        }
+
+        .BAF.order <- order(.tree.2[, "BAF"], decreasing = TRUE)
+
+
         .dh.0 <- angle_count_cpp(baf_seq = .BAF.seq,
-                                 baf = .tree[[.j]][.BAF.order, "BAF"],
-                                 d = .tree[[.j]][.BAF.order, "dbh"],
-                                 h = .tree[[.j]][.BAF.order,
+                                 baf = .tree.2[.BAF.order, "BAF"],
+                                 d = .tree.2[.BAF.order, "dbh"],
+                                 h = .tree.2[.BAF.order,
                                                  switch(.j, tls = "P99",
                                                         field =
                                                           "total.height")],
@@ -750,9 +872,13 @@ simulations <- function(tree.list.tls, distance.sampling = NULL,
           rownames(.perc) <- names(.BAF.seq)
           .perc <- as.matrix(.perc[, colnames(.perc) != "rho_seq",
                                    drop = FALSE])
+          .pts.met <- .points.metrics(rho_seq = .rho.seq, data = .data.tls)
           .angleCountPlot <- cbind(.angleCountPlot,
                                    .perc[rownames(.angleCountPlot), ,
                                          drop = FALSE])
+          .angleCountPlot <- cbind(.angleCountPlot, as.matrix(.pts.met))
+
+
 
         }
 

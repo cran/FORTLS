@@ -37,39 +37,41 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
   # Define probabilities for percentiles calculation
   .prob = c(1, 5, 10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 95, 99)/100
 
-  # Define list containing metrics names for fixed area, k-tree and
-  # angle-count plots
-  .metrics.names <-
-    sapply(c("fixed.area", "k.tree", "angle.count"),
-           function(x, y, z) {
-             c(
-               # Density (trees/ha)
-               c("N.tls", paste("N", y[[x]], sep = ".")),
-
-               # Number of points
-               "num.points", "num.points.est", "num.points.hom",
-               "num.points.hom.est",
-
-               # Basal area (m2/ha)
-               c("G.tls", paste("G", y[[x]], sep = ".")),
-
-               # Volume (m3/ha)
-               c("V.tls", paste("V", y[[x]], sep = ".")),
-
-               # Mean diameters (cm), and mean heights (m)
-               paste(names(z), "tls", sep = "."),
-
-               # Mean dominant diameters (cm), and mean dominant
-               # heights (m)
-               paste(names(z), "0", "tls", sep = "."),
-
-               # Height percentiles (m)
-               sprintf("P%02i", 100 * .prob))
-           },
-           y = .ef.names, z = .mean.names, simplify = FALSE)
-
-  # Create an empty data.frame where results will be saved for fixed area
+  # Define list containing metrics names for fixed area, k-tree and angle-count
   # plots
+  .metrics.names <- sapply(c("fixed.area", "k.tree", "angle.count"),
+                           function(x, y, z) {
+                             c(
+                               # Density (trees/ha)
+                               c("N.tls", paste("N", y[[x]], sep = ".")),
+
+                               # Number of points
+                               "num.points", "num.points.est", "num.points.hom",
+                               "num.points.hom.est",
+
+                               # Basal area (m2/ha)
+                               c("G.tls", paste("G", y[[x]], sep = ".")),
+
+                               # Volume (m3/ha)
+                               c("V.tls", paste("V", y[[x]], sep = ".")),
+
+                               # Mean diameters (cm), and mean heights (m)
+                               paste(names(z), "tls", sep = "."),
+
+                               # Mean dominant diameters (cm), and mean dominant
+                               # heights (m)
+                               paste(names(z), "0", "tls", sep = "."),
+
+                               # Height percentiles (m)
+                               sprintf("P%02i", 100 * .prob),
+
+                               # Points metrics
+                               "mean","max","min","sd","var","mode","kurtosis","skewness",
+                               "perc_on_mode", "perc_on_mean", "weibull_c", "weibull_b")
+                           },
+                           y = .ef.names, z = .mean.names, simplify = FALSE)
+
+  # Create an empty data.frame where results will be saved for fixed area plots
   fixed.area.plot <- NULL
   if (!is.null(plot.parameters$radius)) {
 
@@ -93,8 +95,7 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
 
   }
 
-  # Create an empty data.frame where results will be saved for angle-count
-  # plots
+  # Create an empty data.frame where results will be saved for angle-count plots
   angle.count.plot <- NULL
   if (!is.null(plot.parameters$BAF)) {
 
@@ -116,23 +117,26 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
     .num <- plot.parameters$num.trees
 
   }
+
   names(.num) <- rownames(plot.parameters)
 
+
   # Define TXT files list
-  .files <- unique(tree.list.tls$file)
-  .files.exists <- .files %in% list.files(pattern = "txt", path = dir.data)
-  if (all(!.files.exists)) {
 
-    warning("None of the TXT files in 'tree.list.tls' is available in ",
-            "'dir.data', so no computation will be done")
-  }
-  else if (any(!.files.exists)) {
+  # Obtain initial TXT files list
+  .files <- unique(tree.list.tls[, "file"])
 
-    warning(sum(!.files.exists), " TXT files in 'tree.list.tls' are ",
-            "missing in 'dir.data', so no computation will be done for them")
-
-  }
+  # Check if TXT files exist
+  .files.exists <- file.exists(file.path(dir.data, .files))
+  if (all(!.files.exists))
+    warning("None of the TXT files in 'tree.list.tls' argument is available ",
+            "in 'dir.data', so no computation will be done")
+  else if (any(!.files.exists))
+    warning(sum(!.files.exists), " TXT file(s) in 'tree.list.tls' argument ",
+            "is(are) missing in 'dir.data'. This(these) plot(s) was(were) not ",
+            "taken into account during the execution")
   .files <- .files[.files.exists]
+
 
   # Loop for each TLS plot
   for (.i in .files) {
@@ -160,8 +164,7 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
     if (!is.null(.distSampling)) {
 
       .distSampling <-
-        as.matrix(distance.sampling$tree[distance.sampling$tree$id == .id, ,
-                                         drop = FALSE])
+        distance.sampling$tree[distance.sampling$tree$id == .id, , drop = FALSE]
 
     }
 
@@ -217,11 +220,11 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
     .wide <- ifelse(.wide < 0, (2 * pi) + .wide, .wide)
     .tree.tls <- cbind(.tree.tls, wide = .wide)
 
-    # Select only columns required for calculations below, and convert to matrix
+    # Select only columns required for calculations below
     .col.names <- c("tree", "horizontal.distance", "dbh", "num.points",
                     "num.points.hom", "num.points.est", "num.points.hom.est",
                     "partial.occlusion", "wide", "P99")
-    .tree.tls <- as.matrix(.tree.tls[ , .col.names, drop = FALSE])
+    .tree.tls <- .tree.tls[ , .col.names, drop = FALSE]
     rownames(.tree.tls) <- NULL
 
     # Order by horizontal distance, and compute variables/metrics: density,
@@ -257,7 +260,7 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
       .radius.min <- .radius.max
 
       # Compute a radius sequence, select trees according to maximum radius,
-      # compute accumulated number of points, and create a matrix containing
+      # compute accumulated number of points, and create a data.frame containing
       # the trees' data for each radius value
       .fixedAreaPlot <-
         .radius.fixed.area.calculation(radius.min = .radius.min,
@@ -301,10 +304,13 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
                                z = .data.tls[, "z"], rho = .data.tls[, "rho"])
       rownames(.perc) <- .format.numb(x = .perc[, "rho_seq"], dec = .num.dec)
       .perc <- as.matrix(.perc[, colnames(.perc) != "rho_seq", drop = FALSE])
+      .pts.met <- .points.metrics(rho_seq = .fixedAreaPlot[, "radius"],
+                                  data = .data.tls)
       .fixedAreaPlot <- cbind(.fixedAreaPlot,
                               .perc[rownames(.fixedAreaPlot), , drop = FALSE])
+      .fixedAreaPlot <- cbind(.fixedAreaPlot, as.matrix(.pts.met))
 
-      # Convert diameters from SI units (m) to cm
+      # Convert diameters from International System of Units (m) to cm
       .col.names <- names(.mean.names)[substr(names(.mean.names), 1, 1) == "d"]
       .col.names <- c(.col.names, paste(.col.names, "0", sep = "."))
       .col.names <- paste(.col.names, "tls", sep = ".")
@@ -389,10 +395,12 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
                                rho = .data.tls[, "rho"])
       rownames(.perc) <- names(.rad.seq)
       .perc <- as.matrix(.perc[, colnames(.perc) != "rho_seq", drop = FALSE])
+      .pts.met <- .points.metrics(rho_seq = .rad.seq, data = .data.tls)
       .kTreePlot <- cbind(.kTreePlot,
                           .perc[rownames(.kTreePlot), , drop = FALSE])
+      .kTreePlot <- cbind(.kTreePlot, as.matrix(.pts.met))
 
-      # Convert diameters from SI units (m) to cm
+      # Convert diameters from International System of Units (m) to cm
       .col.names <- names(.mean.names)[substr(names(.mean.names), 1, 1) == "d"]
       .col.names <- c(.col.names, paste(.col.names, "0", sep = "."))
       .col.names <- paste(.col.names, "tls", sep = ".")
@@ -468,10 +476,12 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
                                rho = .data.tls[, "rho"])
       rownames(.perc) <- names(.BAF.seq)
       .perc <- as.matrix(.perc[, colnames(.perc) != "rho_seq", drop = FALSE])
+      .pts.met <- .points.metrics(rho_seq = .rho.seq, data = .data.tls)
       .angleCountPlot <- cbind(.angleCountPlot,
                                .perc[rownames(.angleCountPlot), , drop = FALSE])
+      .angleCountPlot <- cbind(.angleCountPlot, as.matrix(.pts.met))
 
-      # Convert diameters from SI units (m) to cm
+      # Convert diameters from International System of Units (m) to cm
       .col.names <- names(.mean.names)[substr(names(.mean.names), 1, 1) == "d"]
       .col.names <- c(.col.names, paste(.col.names, "0", sep = "."))
       .col.names <- paste(.col.names, "tls", sep = ".")
@@ -497,7 +507,7 @@ metrics.variables <- function(tree.list.tls, distance.sampling = NULL,
 
 
   # Save fixed area, k-tree and/or angle-count plot results, and write csv files
-  # containing them
+  # containing them if 'save.result' is TRUE
 
 
   if (!is.null(plot.parameters$radius)) {

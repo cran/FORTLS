@@ -5,6 +5,9 @@ correlations <- function(simulations,
                          method = c("pearson", "spearman"), save.result = TRUE,
                          dir.result = NULL) {
 
+  if("W" %in% colnames(simulations$fixed.area.plot))
+    variables = c(variables, "W")
+
 
   # Define a character vector containing index name (radius, k or BAF) for each
   # available plot design
@@ -16,6 +19,10 @@ correlations <- function(simulations,
   .field.names <- c(
                     # Density (trees/ha), basal area (m2/ha) and volume (m3/ha)
                     "N", "G", "V",
+
+                    # Biomass (Mg/ha)
+                    if("W" %in% colnames(simulations$fixed.area.plot))
+                      "W",
 
                     # Mean diameters (cm), and mean dominant diameters (cm)
                     "d", "dg", "dgeom", "dharm",
@@ -51,7 +58,11 @@ correlations <- function(simulations,
 
                   # Height percentiles (m)
                   sprintf("P%02i", c(1, 5, 10, 20, 25, 30, 40, 50, 60, 70, 75,
-                                     80, 90, 95, 99)))
+                                     80, 90, 95, 99)),
+
+                  # Points metrics
+                  "mean","max","min","sd","var","mode","kurtosis","skewness",
+                  "perc_on_mode", "perc_on_mean", "weibull_c", "weibull_b")
 
   # Define a character vector containing the available correlation measurements
   .cor.method <- c("pearson", "spearman")
@@ -477,6 +488,8 @@ correlations <- function(simulations,
             switch(.k, N = "Density (N, trees/ha)",
                    G = "Basal area (G, m<sup>2</sup>/ha)",
                    V = "Volume (V, m<sup>3</sup>/ha)",
+                   if("W" %in% colnames(simulations$fixed.area.plot))
+                     W = "Biomass (W, Mg/ha)",
                    d = "Arithmetic mean diameter (d, cm)",
                    dg = "Quadratic mean diameter (dg, cm)",
                    dgeom = "Geometric mean diameter (dgeom, cm)",

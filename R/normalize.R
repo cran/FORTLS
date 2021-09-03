@@ -1,7 +1,10 @@
 
 normalize <- function(las,
+                      x.center = NULL, y.center = NULL,
                       max.dist = NULL, min.height = NULL, max.height = NULL,
                       algorithm.dtm = "tin", res.dtm = 0.2,
+                      csf = list(cloth_resolution = 0.5),
+                      multiple.scans = NULL,
                       id = NULL, file=NULL,
                       dir.data = NULL, save.result = TRUE, dir.result = NULL){
 
@@ -24,6 +27,22 @@ normalize <- function(las,
 
   .pb$tick()
 
+  # Establishing center
+
+  if(is.null(x.center)) {
+
+    x.center <- .las@header@PHB$`X offset`
+
+  }
+
+  if(is.null(y.center)) {
+
+    y.center <- .las@header@PHB$`Y offset`
+
+  }
+
+  .las@data$X <- .las@data$X - x.center
+  .las@data$Y <- .las@data$Y - y.center
 
   # Giving the same scale factor to all coordinates
 
@@ -49,7 +68,7 @@ normalize <- function(las,
   # .th  <- seq(0.1, 1.5, length.out = length(.ws))
   # .data <- lidR::classify_ground(.las, algorithm = lidR::pmf(.ws, .th), last_returns = FALSE)
 
-  .data <- suppressWarnings(suppressMessages(lidR::classify_ground(.las, algorithm = lidR::csf(), last_returns = FALSE)))
+  .data <- suppressWarnings(suppressMessages(lidR::classify_ground(.las, algorithm = lidR::csf(cloth_resolution = csf$cloth_resolution), last_returns = FALSE)))
 
   .pb$tick()
 
@@ -76,7 +95,7 @@ normalize <- function(las,
 
   .pb$tick()
 
-  if(mean(.slope@data@values, na.rm = TRUE) > 0.3){
+  if(mean(.slope@data@values, na.rm = TRUE) > 0.5){
 
 
     # Normalize
@@ -173,10 +192,18 @@ normalize <- function(las,
   # This is based on the principle that closer objects (with the same size and shape)
   # have more probability to recieve points
 
-  .data$prob <- (.data$r / max(.data$r)) ^ 2
-  .data$prob.random <- stats::runif(nrow(.data))
-  .data$prob.selec <- ifelse(.data$prob >= .data$prob.random, 1, 0)
+  if(!is.null(multiple.scans)){
 
+    .data$prob <- stats::runif(nrow(.data))
+    .data$prob.selec <- ifelse(.data$prob >= 0.5, 1, 0)
+
+  } else {
+
+    .data$prob <- (.data$r / max(.data$r)) ^ 2
+    .data$prob.random <- stats::runif(nrow(.data))
+    .data$prob.selec <- ifelse(.data$prob >= .data$prob.random, 1, 0)
+
+  }
 
   # Assign id
 

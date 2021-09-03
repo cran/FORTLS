@@ -64,7 +64,8 @@ tree.detection <- function(data, dbh.min = 7.5, dbh.max = 200, ncr.threshold = 0
     .cut <- .cut[which(.cut$z > (cuts-0.05) & .cut$z < (cuts+0.05)), , drop = FALSE]
 
     # Dbscan parameters
-    .eps <- .dbh.min / 2
+    # .eps <- .dbh.min / 2
+    .eps <- (tan(.alpha.h / 2) * (max(.cut$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2)
 
     # Clustering
     .dbscan <- dbscan::dbscan(.cut[, c("x", "y"), drop = FALSE], eps = .eps)
@@ -109,18 +110,43 @@ tree.detection <- function(data, dbh.min = 7.5, dbh.max = 200, ncr.threshold = 0
       # Select cluster .i
       .dat <- .cut[which(.cut$cluster == .i), , drop = FALSE]
 
+      # First filter
+      .n <- (0.1 / (tan(.alpha.v / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2))
+
+      if(nrow(.dat) < .n){next}
+
+      # Second filter
+      .h <- (tan(.alpha.h / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2)
+
+      if((max(.dat$phi) - min(.dat$phi)) < pi){
+
+        .dat.2 <- .dat[order(.dat$phi, decreasing = F), ]
+
+      } else {
+
+        .dat.2 <- .dat
+        .dat.2$phi <- ifelse(.dat.2$phi < 1, .dat.2$phi + (2 * pi), .dat.2$phi)
+        .dat.2 <- .dat.2[order(.dat.2$phi, decreasing = F), ]
+
+      }
+
+      .dist <- sqrt((.dat.2$x[2:nrow(.dat.2)]-.dat.2$x[1:nrow(.dat.2)-1])^2+(.dat.2$y[2:nrow(.dat.2)]-.dat.2$y[1:nrow(.dat.2)-1])^2)
+      .dist <- sd(.dist) / .h
+
+      if(.dist > 1){next}
+
       # Generate mesh
 
       .x.rang <- max(.dat$x) - min(.dat$x)
       .y.rang <- max(.dat$y) - min(.dat$y)
-      .phi.rang <- max(.dat$phi) - min(.dat$phi)
-      .rho.rang <- max(.dat$rho) - min(.dat$rho)
+      # .phi.rang <- max(.dat$phi) - min(.dat$phi)
+      # .rho.rang <- max(.dat$rho) - min(.dat$rho)
 
       # Compute centroids coordinates with respect to TLS
       .x.cent <- (.x.rang / 2) + min(.dat$x)
       .y.cent <- (.y.rang / 2) + min(.dat$y)
-      .phi.cent <- (.phi.rang / 2) + min(.dat$phi)
-      .rho.cent <- (.rho.rang / 2) + min(.dat$rho)
+      # .phi.cent <- (.phi.rang / 2) + min(.dat$phi)
+      # .rho.cent <- (.rho.rang / 2) + min(.dat$rho)
 
       # Obtain width for mesh to be applied in the cluster
       .ancho.malla <- (max(.x.rang, .y.rang) / 2) * 1.5
@@ -133,26 +159,30 @@ tree.detection <- function(data, dbh.min = 7.5, dbh.max = 200, ncr.threshold = 0
 
       # Obtain second mesh based on cylindrical coordinates (phi and rho), which
       # will be used to compute mean points density by cell
-      .ancho.malla.2 <- (max(.phi.rang, .rho.rang) / 2)
-
-      .phimin <- .phi.cent - .ancho.malla.2
-      .rhomin <- .rho.cent - .ancho.malla.2
-      .phimax <- .phi.cent + .ancho.malla.2
-      .rhomax <- .rho.cent + .ancho.malla.2
+      # .ancho.malla.2 <- (max(.phi.rang, .rho.rang) / 2)
+      #
+      # .phimin <- .phi.cent - .ancho.malla.2
+      # .rhomin <- .rho.cent - .ancho.malla.2
+      # .phimax <- .phi.cent + .ancho.malla.2
+      # .rhomax <- .rho.cent + .ancho.malla.2
 
       # Filter
-      .x.values <- seq(from = .xmin, to = .xmax, by = 0.03)
-      .y.values <- seq(from = .ymin, to = .ymax, by = 0.03)
+      .h <- 2 * (tan(.alpha.h / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2)
+
+      .x.values <- seq(from = .xmin, to = .xmax, by = .h)
+      .y.values <- seq(from = .ymin, to = .ymax, by = .h)
+
+      .h <- .h / 2
 
       .density <- matrix(0, ncol = length(.x.values), nrow = length(.y.values))
 
       for(.i in 1:length(.x.values)){
         for(.j in 1:length(.y.values)){
 
-          .den <- .dat[which(.dat$x <= ((.x.values[.i]) + 0.015) &
-                             .dat$x > ((.x.values[.i]) - 0.015) &
-                             .dat$y <= ((.y.values[.j]) + 0.015) &
-                             .dat$y > ((.y.values[.j]) - 0.015)), , drop = FALSE]
+          .den <- .dat[which(.dat$x <= ((.x.values[.i]) + .h) &
+                             .dat$x > ((.x.values[.i]) - .h) &
+                             .dat$y <= ((.y.values[.j]) + .h) &
+                             .dat$y > ((.y.values[.j]) - .h)), , drop = FALSE]
 
           # Discard cells with less than 2 points for computing mean points
           # density by cell
@@ -174,10 +204,10 @@ tree.detection <- function(data, dbh.min = 7.5, dbh.max = 200, ncr.threshold = 0
       for(.i in 1:length(.x.values)){
         for(.j in 1:length(.y.values)){
 
-          .den <- .dat[which(.dat$x <= ((.x.values[.i]) + 0.015) &
-                             .dat$x > ((.x.values[.i]) - 0.015) &
-                             .dat$y <= ((.y.values[.j]) + 0.015) &
-                             .dat$y > ((.y.values[.j]) - 0.015)), , drop = FALSE]
+          .den <- .dat[which(.dat$x <= ((.x.values[.i]) + .h) &
+                             .dat$x > ((.x.values[.i]) - .h) &
+                             .dat$y <= ((.y.values[.j]) + .h) &
+                             .dat$y > ((.y.values[.j]) - .h)), , drop = FALSE]
 
           # Discard cells with less than 2 points for computing mean density by
           # cell
@@ -307,17 +337,17 @@ tree.detection <- function(data, dbh.min = 7.5, dbh.max = 200, ncr.threshold = 0
 
       # Compute rho coordinates for section ends
 
-      if((max(.dat$phi) - min(.dat$phi)) < pi){
-
-        .dat.2 <- .dat[order(.dat$phi, decreasing = F), , drop = FALSE]
-
-      } else {
-
-        .dat.2 <- .dat
-        .dat.2$phi <- ifelse(.dat.2$phi < 1, .dat.2$phi + (2 * pi), .dat.2$phi)
-        .dat.2 <- .dat.2[order(.dat.2$phi, decreasing = F), , drop = FALSE]
-
-      }
+      # if((max(.dat$phi) - min(.dat$phi)) < pi){
+      #
+      #   .dat.2 <- .dat[order(.dat$phi, decreasing = F), , drop = FALSE]
+      #
+      # } else {
+      #
+      #   .dat.2 <- .dat
+      #   .dat.2$phi <- ifelse(.dat.2$phi < 1, .dat.2$phi + (2 * pi), .dat.2$phi)
+      #   .dat.2 <- .dat.2[order(.dat.2$phi, decreasing = F), , drop = FALSE]
+      #
+      # }
 
       # Evaluamos aqui el ratio
 
@@ -377,7 +407,7 @@ tree.detection <- function(data, dbh.min = 7.5, dbh.max = 200, ncr.threshold = 0
       # Zhang et al., (2019)
       .n.w.ratio <- stats::sd(.dat$z) / sqrt(stats::sd(.dat$x) ^ 2 + stats::sd(.dat$y) ^ 2)
 
-      if(.n.w.ratio > 1.5){next}
+      if(.n.w.ratio > 1){next}
 
       # Results
       .salida <- data.frame(cluster = .dat$cluster[1],
@@ -440,101 +470,152 @@ tree.detection <- function(data, dbh.min = 7.5, dbh.max = 200, ncr.threshold = 0
 
   #.filter <- rbind(.filter1.0, .filter1.3, .filter1.6)
 
-  if(nrow(.filter) < 1) stop("No tree was detected")
-
-  .dbscan <- dbscan::dbscan(.filter[, c("center.x", "center.y"), drop = FALSE], eps = max(.filter$radius), minPts = 1)
-  .filter$cluster <- .dbscan$cluster
-  .filter <- .filter[order(.filter$cluster, .filter$sec), , drop = FALSE]
-
-  # Calculate of taper coefficient as the slope coefficient of linear regression
-
-  .taper <- .filter[, c("cluster", "sec", "radius"), drop = FALSE]
-
-
-  .lm <- stats::lm(radius ~ sec, data = .taper)
-  .slope <- stats::coef(.lm)[2]
-
-
-  # If a new column ("dif") is created containing the difference between dbh and
-  # section from which radius is estimated, number of used sections (or cuts)
-  # will not be important. An estimated radius will always exist
-  .filter$dif <- 1.3 - .filter$sec
-  .filter$radio.est <- ifelse(.filter$dif == 0, .filter$radius,
-                              .filter$radius + .slope * .filter$dif)
-
-  # When there are not enough tree to the linear model, and tress were
-  # detected at at different sections than 1.3 m, we assume these radius
-  # as dbh. This could happen in very few situations.
-  .filter$radio.est <- ifelse(is.na(.filter$radio.est), .filter$radius, .filter$radio.est)
-
-  .radio.est <- tapply(.filter$radio.est, .filter$cluster, mean)
-
-  # Dendrometric variables
-  .tree <- data.frame(tree = tapply(.filter$cluster, .filter$cluster, mean, na.rm = TRUE),
-                      center.x = tapply(.filter$center.x, .filter$cluster, mean, na.rm = TRUE),
-                      center.y = tapply(.filter$center.y, .filter$cluster, mean, na.rm = TRUE),
-                      center.phi = tapply(.filter$center.phi, .filter$cluster, mean, na.rm = TRUE),
-                      center.rho = tapply(.filter$center.rho, .filter$cluster, mean, na.rm = TRUE),
-                      center.r = tapply(.filter$center.r, .filter$cluster, mean, na.rm = TRUE),
-                      center.theta = tapply(.filter$center.theta, .filter$cluster, mean,na.rm = TRUE),
-
-                      horizontal.distance = tapply(.filter$center.rho, .filter$cluster, mean, na.rm = TRUE), # repeated line
-                      radius = .radio.est,
-
-                      phi.left = tapply(.filter$phi.left, .filter$cluster, mean, na.rm = TRUE),
-                      phi.right = tapply(.filter$phi.right, .filter$cluster, mean, na.rm = TRUE),
-
-                      partial.occlusion = tapply(.filter$arc.circ, .filter$cluster, mean, na.rm = TRUE),
-
-                      num.points = tapply(.filter$num.points, .filter$cluster, mean, na.rm = TRUE),
-                      num.points.hom = tapply(.filter$num.points.hom, .filter$cluster, mean, na.rm = TRUE))
-
-  # Indicate trees with partial occlusions, those for which none of the sections
-  # was identified as circumference arch (ArcCirc)
-  .tree$partial.occlusion <- ifelse(.tree$partial.occlusion == 0, 1, 0)
-
-  # Compute dbh (cm)
-  .tree$dbh <- .tree$radius * 200
-
-  # Calculate points belonging to radius unit
-  # Since it will be an estimation, select sections completely visible
-  # (ArcCirc == 1) in section corresponding to 1.3 m (where dbh is estimated)
-  .filter$filter <- ifelse(.filter$sec == 1.3 & .filter$arc.circ == 1, 1, 0)
-  .filter2 <- subset(.filter, .filter$filter == 1)
-
-  if(nrow(.filter2) < 1)
-    .filter2 <- .filter
-
-  # Estimate number of points by cluster, with and without point cropping
-  # process, corresponding to radius 1 m
-  .filter2$points.radio <- .filter2$num.points / .filter2$radio
-  .filter2$points.radio.hom <- .filter2$num.points.hom / .filter2$radio
-
-  # Average points after point cropping by m of radius
-  .tree$points.m <- mean(.filter2$points.radio)
-  .tree$points.m.hom <- mean(.filter2$points.radio.hom)
-
-  # Finally, compute number of points estimated for each tree according to
-  # radius
-  .tree$num.points.est <- .tree$points.m * .tree$radius
-  .tree$num.points.hom.est <- .tree$points.m.hom * .tree$radius
-
-  # If plot identification (id) is not available
-  if(is.null(data$id)){
-
-    .tree <- .tree[, c("tree", "center.x", "center.y", "center.phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion"), drop = FALSE]
-    colnames(.tree) <- c("tree", "x", "y", "phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion")
-
-  } else{
-
-    # If plot identification (id) is available
-
-    .tree$id <- data$id[1]
-    .tree$file <- data$file[1]
-
-    .tree <- .tree[, c("id", "file", "tree", "center.x", "center.y", "center.phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion"), drop = FALSE]
-    colnames(.tree) <- c("id", "file", "tree", "x", "y", "phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion")
-
+  if(nrow(.filter) < 1) {
+    
+    # Generate a warning and create empty data.frame to be returned, if no row
+    # was included in .filter
+    
+    if(is.null(data$id)){
+      
+      # If plot identification (id) is not available
+      
+      warning("No tree was detected")
+      
+      .colnames <- c("tree", "x", "y", "phi", "phi.left", "phi.right",
+                     "horizontal.distance", "dbh", "num.points",
+                     "num.points.hom", "num.points.est", "num.points.hom.est",
+                     "partial.occlusion")
+    } else {
+      
+      # If plot identification (id) is available
+      
+      warning("No tree was detected for plot", data$id[1])
+      
+      .colnames <- c("id", "file", "tree", "x", "y", "phi", "phi.left",
+                     "phi.right", "horizontal.distance", "dbh", "num.points",
+                     "num.points.hom", "num.points.est", "num.points.hom.est",
+                     "partial.occlusion")
+    }
+    
+    .tree <- data.frame(matrix(nrow = 0, ncol = length(.colnames),
+                               dimnames = list(NULL, .colnames)))
+  }
+  
+  else {
+    
+    # Continue calculations, if any row was included in .filter
+    
+    .dbscan <- dbscan::dbscan(.filter[, c("center.x", "center.y"), drop = FALSE], eps = mean(.filter$radius), minPts = 1)
+    .filter$cluster <- .dbscan$cluster
+    .filter <- .filter[order(.filter$cluster, .filter$sec), , drop = FALSE]
+    
+    # Calculate of taper coefficient as the slope coefficient of linear regression
+    
+    .taper <- .filter[, c("cluster", "sec", "radius"), drop = FALSE]
+    
+    
+    .lm <- stats::lm(radius ~ sec, data = .taper)
+    .slope <- stats::coef(.lm)[2]
+    
+    
+    # If a new column ("dif") is created containing the difference between dbh and
+    # section from which radius is estimated, number of used sections (or cuts)
+    # will not be important. An estimated radius will always exist
+    .filter$dif <- 1.3 - .filter$sec
+    .filter$radio.est <- ifelse(.filter$dif == 0, .filter$radius,
+                                .filter$radius + .slope * .filter$dif)
+    
+    # When there are not enough tree to the linear model, and tress were
+    # detected at at different sections than 1.3 m, we assume these radius
+    # as dbh. This could happen in very few situations.
+    .filter$radio.est <- ifelse(is.na(.filter$radio.est), .filter$radius, .filter$radio.est)
+    
+    .radio.est <- data.frame(radio.est = as.numeric())
+    
+    for (i in unique(.filter$cluster)) {
+      
+      .dat <- .filter[which(.filter$cluster == i), ]
+      
+      if(max(.dat$arc.circ) > 0){
+        
+        .dat <- .dat[which(.dat$arc.circ > 0), ]
+        
+      }
+      
+      .out <- data.frame(radio.est = mean(.dat$radio.est))
+      .radio.est <- rbind(.radio.est, .out)
+      
+    }
+    
+    
+    # Dendrometric variables
+    .tree <- data.frame(tree = tapply(.filter$cluster, .filter$cluster, mean, na.rm = TRUE),
+                        center.x = tapply(.filter$center.x, .filter$cluster, mean, na.rm = TRUE),
+                        center.y = tapply(.filter$center.y, .filter$cluster, mean, na.rm = TRUE),
+                        center.phi = tapply(.filter$center.phi, .filter$cluster, mean, na.rm = TRUE),
+                        center.rho = tapply(.filter$center.rho, .filter$cluster, mean, na.rm = TRUE),
+                        center.r = tapply(.filter$center.r, .filter$cluster, mean, na.rm = TRUE),
+                        center.theta = tapply(.filter$center.theta, .filter$cluster, mean,na.rm = TRUE),
+                        
+                        horizontal.distance = tapply(.filter$center.rho, .filter$cluster, mean, na.rm = TRUE), # repeated line
+                        radius = .radio.est$radio.est,
+                        
+                        phi.left = tapply(.filter$phi.left, .filter$cluster, mean, na.rm = TRUE),
+                        phi.right = tapply(.filter$phi.right, .filter$cluster, mean, na.rm = TRUE),
+                        
+                        partial.occlusion = tapply(.filter$arc.circ, .filter$cluster, min, na.rm = TRUE),
+                        
+                        num.points = tapply(.filter$num.points, .filter$cluster, mean, na.rm = TRUE),
+                        num.points.hom = tapply(.filter$num.points.hom, .filter$cluster, mean, na.rm = TRUE))
+    
+    # Indicate trees with partial occlusions, those for which none of the sections
+    # was identified as circumference arch (ArcCirc)
+    .tree$partial.occlusion <- ifelse(.tree$partial.occlusion == 0, 1, 0)
+    
+    # Compute dbh (cm)
+    .tree$dbh <- .tree$radius * 200
+    
+    # Calculate points belonging to radius unit
+    # Since it will be an estimation, select sections completely visible
+    # (ArcCirc == 1) in section corresponding to 1.3 m (where dbh is estimated)
+    .filter$filter <- ifelse(.filter$sec == 1.3 & .filter$arc.circ == 1, 1, 0)
+    .filter2 <- subset(.filter, .filter$filter == 1)
+    
+    if(nrow(.filter2) < 1)
+      .filter2 <- .filter
+    
+    # Estimate number of points by cluster, with and without point cropping
+    # process, corresponding to radius 1 m
+    .filter2$points.radio <- .filter2$num.points / .filter2$radio
+    .filter2$points.radio.hom <- .filter2$num.points.hom / .filter2$radio
+    
+    # Average points after point cropping by m of radius
+    .tree$points.m <- mean(.filter2$points.radio)
+    .tree$points.m.hom <- mean(.filter2$points.radio.hom)
+    
+    # Finally, compute number of points estimated for each tree according to
+    # radius
+    .tree$num.points.est <- .tree$points.m * .tree$radius
+    .tree$num.points.hom.est <- .tree$points.m.hom * .tree$radius
+    
+    # If plot identification (id) is not available
+    if(is.null(data$id)){
+      
+      .tree <- .tree[, c("tree", "center.x", "center.y", "center.phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion"), drop = FALSE]
+      colnames(.tree) <- c("tree", "x", "y", "phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion")
+      
+    } else{
+      
+      # If plot identification (id) is available
+      
+      .tree$id <- data$id[1]
+      .tree$file <- data$file[1]
+      
+      .tree <- .tree[, c("id", "file", "tree", "center.x", "center.y", "center.phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion"), drop = FALSE]
+      colnames(.tree) <- c("id", "file", "tree", "x", "y", "phi", "phi.left", "phi.right", "horizontal.distance", "dbh", "num.points", "num.points.hom", "num.points.est", "num.points.hom.est", "partial.occlusion")
+      
+    }
+    
   }
 
   # .tree$id <- as.integer(.tree$id)
