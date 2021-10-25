@@ -1,4 +1,4 @@
-3ee52d4a48e3cbfa6dc8b9d052f2955c *DESCRIPTION
+473bddb70e3b2e1bba1a1c810ff999ba *DESCRIPTION
 8098fbc3b842e743d0a9c059f51c2e3d *NAMESPACE
 cff4d4729cf34fc128d9549f345832e8 *R/RcppExports.R
 8c89b56994549697f9f723ffdf2f1877 *R/auxiliary.functions.R
@@ -13,7 +13,7 @@ c0479e7fe10b05b59c66754d3e127c0e *R/normalize.R
 b17ffd2647c41814ef597e2bfe9c8da8 *R/tree.detection.R
 f9c7ca4bf794401d88242cda3dd6ef6e *R/tree.detection.multiple.R
 a706079bb072073a47c6be76c96c37e6 *README.md
-a5161a0c6edf1080955d84a1886200cc *build/partial.rdb
+360d2280fc2e42074570372cb0b7e646 *build/partial.rdb
 f3c1fb9101a645b21e1003e896908c16 *data/Rioja.data.RData
 6f8cc07fb4c39be4d73c0275312d998f *data/Rioja.simulations.RData
 eefeee3d39b15998ce14b043f22ca48a *data/datalist
