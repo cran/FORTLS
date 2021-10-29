@@ -1,5 +1,5 @@
-473bddb70e3b2e1bba1a1c810ff999ba *DESCRIPTION
-8098fbc3b842e743d0a9c059f51c2e3d *NAMESPACE
+cf0fab4a8f13d9579a10057b1afc205c *DESCRIPTION
+88ac312fdeb4baecae60327f93d61444 *NAMESPACE
 cff4d4729cf34fc128d9549f345832e8 *R/RcppExports.R
 8c89b56994549697f9f723ffdf2f1877 *R/auxiliary.functions.R
 bfdd3d4a7344c135ce399dd28f975629 *R/correlations.R
@@ -13,7 +13,7 @@ c0479e7fe10b05b59c66754d3e127c0e *R/normalize.R
 b17ffd2647c41814ef597e2bfe9c8da8 *R/tree.detection.R
 f9c7ca4bf794401d88242cda3dd6ef6e *R/tree.detection.multiple.R
 a706079bb072073a47c6be76c96c37e6 *README.md
-360d2280fc2e42074570372cb0b7e646 *build/partial.rdb
+df483fc3e988da24dfd996b94a4e692e *build/partial.rdb
 f3c1fb9101a645b21e1003e896908c16 *data/Rioja.data.RData
 6f8cc07fb4c39be4d73c0275312d998f *data/Rioja.simulations.RData
 eefeee3d39b15998ce14b043f22ca48a *data/datalist
@@ -22,17 +22,17 @@ e6445eb73fb34afa94d557e838ca8bab *man/FORTLS-package.Rd
 149ba9fa0963e7607d2178c292fd64db *man/Rioja.data.Rd
 9cd8e44a9548b0ef5d6c2ca2c657b3d0 *man/Rioja.simulations.Rd
 b2c89fb21ab1b7e419006cbad3f8c49c *man/angle_count_cpp.Rd
-d9c7e6587a31175489f6fbb69952ca10 *man/correlations.Rd
+2f3c07ef7f9ed30670cdf9491b955370 *man/correlations.Rd
 53c25d788efd6747752a6f0a1a48994c *man/distance.sampling.Rd
 e6f3535aedbaf4ea5e2486b13e55fbb9 *man/estimation.plot.size.Rd
 144558c946b71583c60e0dfb384a6d51 *man/figures/FORTLS.png
 aa84b71758b2fac13fa45ea63e517e3d *man/fixed_area_cpp.Rd
 914da6a6a30ff2f5e6fb71f71e5e725d *man/height_perc_cpp.Rd
 c42ed133a44be6ebb6a3ca29a6a0a54f *man/k_tree_cpp.Rd
-0b68b5a068fa39ee15448f9becd701f4 *man/metrics.variables.Rd
+d21ae2104b75886d0105c3e6ea59a8dc *man/metrics.variables.Rd
 b3a53c7a5d3144de4539edc7ce0ddeb1 *man/ncr_point_cloud_double.Rd
 df7710b14de84a2792c9a86cc9869b1b *man/normalize.Rd
-d401244845cddd779ea728e8b4e95b3e *man/optimize.plot.design.Rd
+2c013df8ec27bbbb217b1b766ace1d0e *man/optimize.plot.design.Rd
 9dcb57b487a64463ac2d73a40b7c77bd *man/relative.bias.Rd
 3cd1e3dbc07492f1f13db4a7d7037051 *man/simulations.Rd
 a8d42ea8f3dae33b47c63626b0ba393e *man/tree.detection.Rd

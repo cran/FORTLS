@@ -206,7 +206,7 @@ corr <- correlations(simulations = Rioja.simulations,
                                    "d.0", "dg.0", "dgeom.0", "dharm.0", "h",
                                    "hg", "hgeom", "hharm", "h.0", "hg.0",
                                    "hgeom.0", "hharm.0"),
-                     save.result = FALSE)
+                                   save.result = FALSE)
 
 opt.corr <- corr$opt.correlations
 
@@ -246,5 +246,10 @@ optimize.plot.design(
                  "dgeom.0", "dharm.0", "h", "hg", "hgeom", "hharm", "h.0",
                  "hg.0", "hgeom.0", "hharm.0"),
   dir.result = dir.result)
+
+# Removing all the files generated
+delete <- dir(dir.result, full.names = TRUE)
+unlink(delete)
+
 }
 }

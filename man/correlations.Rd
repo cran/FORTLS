@@ -444,19 +444,21 @@ dir.result <- getwd()
 # to Rioja example
 # Pearson's and Spearman's correlations for variables by default
 
-corr <- correlations(simulations = Rioja.simulations, dir.result = dir.result)
+corr <- correlations(simulations = Rioja.simulations, dir.result = dir.result, save.result = FALSE)
 
 
 # Pearson's and Spearman's correlations for variable 'N'
 
 corr <- correlations(simulations = Rioja.simulations, variables = "N",
-                     dir.result = dir.result)
+                     dir.result = dir.result,
+                     save.result = FALSE)
 
 
 # Only Pearson's correlations for variables by default
 
 corr <- correlations(simulations = Rioja.simulations, method = "pearson",
-                     dir.result = dir.result)
+                     dir.result = dir.result,
+                     save.result = FALSE)
 
 
 # Pearson's and Spearman's correlations corresponding to angle-count design for
@@ -467,7 +469,8 @@ corr <- correlations(simulations = Rioja.simulations["angle.count.plot"],
                                     "d.0", "dg.0", "dgeom.0", "dharm.0", "h",
                                     "hg", "hgeom", "hharm", "h.0", "hg.0",
                                     "hgeom.0", "hharm.0"),
-                     dir.result = dir.result)
+                     dir.result = dir.result,
+                     save.result = FALSE)
 }
 }
 

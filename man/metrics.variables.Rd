@@ -273,7 +273,7 @@ tree.list.tls <- Rioja.data$tree.list.tls
 # Download example of TXT file corresponding to plot 1 from Rioja data set
 
 download.file(url = "https://www.dropbox.com/s/w4fgcyezr2olj9m/1.txt?raw=1",
-              destfile = file.path(dir.data, "1.txt"), method = "wininet",
+              destfile = file.path(dir.data, "1.txt"),
               mode = "wb")
 
 
@@ -306,7 +306,7 @@ tree.list.tls <- merge(tree.list.tls, plot.attributes, by = "id")
 # Download example of TXT file corresponding to strata 2 (plot 9) from Rioja data set
 
 download.file(url = "https://www.dropbox.com/s/5rwmbyn8tmqc48m/9.txt?raw=1",
-              destfile = file.path(dir.data, "9.txt"), method = "wininet",
+              destfile = file.path(dir.data, "9.txt"),
               mode = "wb")
 
 plot.parameters <- data.frame(radius = c(10, 15), k.tree = c(8, 12), BAF = c(1.5, 2),
