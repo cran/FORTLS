@@ -95,11 +95,11 @@ dir.result <- getwd()
 
 download.file("https://www.dropbox.com/s/2c3d320o3srcawb/1.las?raw=1",
               destfile = file.path(dir.data, "1.las"),
-              method = "wininet", mode = "wb")
+              mode = "wb")
 
 download.file("https://www.dropbox.com/s/9k8zn5dt0xcxfof/2.las?raw=1",
               destfile = file.path(dir.data, "2.las"),
-              method = "wininet", mode = "wb")
+              mode = "wb")
 
 
 # Obtaining a vector with names of LAS files located in dir.data

@@ -1,4 +1,4 @@
-cf0fab4a8f13d9579a10057b1afc205c *DESCRIPTION
+127ec6983ba9ae03d02ab13494d58098 *DESCRIPTION
 88ac312fdeb4baecae60327f93d61444 *NAMESPACE
 cff4d4729cf34fc128d9549f345832e8 *R/RcppExports.R
 8c89b56994549697f9f723ffdf2f1877 *R/auxiliary.functions.R
@@ -13,7 +13,7 @@ c0479e7fe10b05b59c66754d3e127c0e *R/normalize.R
 b17ffd2647c41814ef597e2bfe9c8da8 *R/tree.detection.R
 f9c7ca4bf794401d88242cda3dd6ef6e *R/tree.detection.multiple.R
 a706079bb072073a47c6be76c96c37e6 *README.md
-df483fc3e988da24dfd996b94a4e692e *build/partial.rdb
+7b7f67afa0433bfc659ae0733d1d46d4 *build/partial.rdb
 f3c1fb9101a645b21e1003e896908c16 *data/Rioja.data.RData
 6f8cc07fb4c39be4d73c0275312d998f *data/Rioja.simulations.RData
 eefeee3d39b15998ce14b043f22ca48a *data/datalist
@@ -31,12 +31,12 @@ aa84b71758b2fac13fa45ea63e517e3d *man/fixed_area_cpp.Rd
 c42ed133a44be6ebb6a3ca29a6a0a54f *man/k_tree_cpp.Rd
 d21ae2104b75886d0105c3e6ea59a8dc *man/metrics.variables.Rd
 b3a53c7a5d3144de4539edc7ce0ddeb1 *man/ncr_point_cloud_double.Rd
-df7710b14de84a2792c9a86cc9869b1b *man/normalize.Rd
+98c75331bb23e46578ff3ad44726f225 *man/normalize.Rd
 2c013df8ec27bbbb217b1b766ace1d0e *man/optimize.plot.design.Rd
 9dcb57b487a64463ac2d73a40b7c77bd *man/relative.bias.Rd
-3cd1e3dbc07492f1f13db4a7d7037051 *man/simulations.Rd
-a8d42ea8f3dae33b47c63626b0ba393e *man/tree.detection.Rd
-a2c6f788a42ea69a9b679f5657fa0057 *man/tree.detection.multiple.Rd
+12aaccd334a7048a84cd1c39dfbcf85c *man/simulations.Rd
+9d55ddd0e4cc28f05ee54edaeff80910 *man/tree.detection.Rd
+ab95e0423a8470596688027277695b35 *man/tree.detection.multiple.Rd
 387d1d3bd516d14e965a5111e85feaf9 *man/weighted_mean_arit.Rd
 007057e862d2db74f268964e48a31770 *man/weighted_mean_geom.Rd
 35c7324e756f36cf57898343b2c24667 *man/weighted_mean_harm.Rd

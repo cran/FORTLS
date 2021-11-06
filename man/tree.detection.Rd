@@ -153,7 +153,7 @@ dir.result <- getwd()
 
 download.file("https://www.dropbox.com/s/2c3d320o3srcawb/1.las?raw=1",
               destfile = file.path(dir.data, "1.las"),
-              method = "wininet", mode = "wb")
+              mode = "wb")
 
 # Normalizing the point cloud data as a neccesary step for detecting trees
 
