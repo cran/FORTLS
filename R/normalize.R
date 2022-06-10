@@ -1,14 +1,18 @@
 
-normalize <- function(las,
+normalize <- function(las, normalized = NULL,
                       x.center = NULL, y.center = NULL,
-                      max.dist = NULL, min.height = NULL, max.height = NULL,
-                      algorithm.dtm = "tin", res.dtm = 0.2,
+                      max.dist = NULL, min.height = NULL, max.height = 50,
+                      algorithm.dtm = "knnidw", res.dtm = 0.2,
                       csf = list(cloth_resolution = 0.5),
-                      multiple.scans = NULL,
-                      id = NULL, file=NULL,
+                      RGB = NULL,
+                      scan.approach = "single",
+                      id = NULL, file = NULL,
                       dir.data = NULL, save.result = TRUE, dir.result = NULL){
 
-  .pb <- progress::progress_bar$new(total = 11)
+  if(is.null(normalized)){
+  .pb <- progress::progress_bar$new(total = 12)} else {
+    .pb <- progress::progress_bar$new(total = 6)}
+
   .pb$tick()
 
 
@@ -23,7 +27,10 @@ normalize <- function(las,
 
   # Loading input (LAS file)
 
-  .las <- suppressWarnings(suppressMessages(lidR::readLAS(file.path(dir.data, las), select = "xyz")))
+  if(is.null(RGB)){
+  .las <- suppressWarnings(suppressMessages(lidR::readLAS(file.path(dir.data, las), select = "xyz")))} else {
+    .las <- suppressWarnings(suppressMessages(lidR::readLAS(file.path(dir.data, las), select = "xyzRGB")))}
+
 
   .pb$tick()
 
@@ -31,13 +38,13 @@ normalize <- function(las,
 
   if(is.null(x.center)) {
 
-    x.center <- .las@header@PHB$`X offset`
+    x.center <- mean(c(.las@header@PHB$`Max X`, .las@header@PHB$`Min X`))
 
   }
 
   if(is.null(y.center)) {
 
-    y.center <- .las@header@PHB$`Y offset`
+    y.center <- mean(c(.las@header@PHB$`Max Y`, .las@header@PHB$`Min Y`))
 
   }
 
@@ -50,21 +57,30 @@ normalize <- function(las,
   .las@header@PHB[["Y scale factor"]] <- 0.001
   .las@header@PHB[["Z scale factor"]] <- 0.001
 
+  .pb$tick()
 
   # Data filtering at horizontal distances larger than max_dist m in the horizontal plane
 
-  if(!is.null(max.dist)) {
+  if(!is.null(normalized)) {
 
-    .las <- lidR::clip_circle(.las, 0, 0, max.dist)
+    if(!is.null(max.dist)){
+      .data <- lidR::clip_circle(.las, 0, 0, max.dist)
+      .data <- data.frame(.data@data)} else {
 
-  }
+      .data <- data.frame(.las@data)}
 
-  .pb$tick()
 
+    # .data <- subset(.data, .data$Classification == 1)
+
+    .data$slope = 0
+
+    .pb$tick()
+
+  } else {
 
   # Normalize
 
-  # .ws  <- seq(3,12, 4)
+  # .ws  <- seq(3, 12, 4)
   # .th  <- seq(0.1, 1.5, length.out = length(.ws))
   # .data <- lidR::classify_ground(.las, algorithm = lidR::pmf(.ws, .th), last_returns = FALSE)
 
@@ -118,6 +134,8 @@ normalize <- function(las,
 
   }
 
+  rm(.las)
+
   .pb$tick()
 
 
@@ -125,11 +143,27 @@ normalize <- function(las,
 
   .data <- suppressWarnings(suppressMessages(lidR::normalize_height(.data, .dtm, add_lasattribute = FALSE, na.rm = TRUE)))
 
+  rm(.dtm)
+
   .pb$tick()
+
+
+  # Data filtering at horizontal distances larger than max_dist m in the horizontal plane
+
+  if(!is.null(max.dist)) {
+
+    .data <- lidR::clip_circle(.data, 0, 0, max.dist)
+
+    }
+
+  .pb$tick()
+
 
   # Assigning slope to point cloud
 
   .data <- lidR::merge_spatial(.data, .slope, "slope")
+
+  rm(.slope)
 
   .pb$tick()
 
@@ -142,11 +176,16 @@ normalize <- function(las,
 
   .data <- subset(.data, .data$Classification == 1)
 
+  }
+
 
   # Extracting coordinates values
 
+  if(is.null(RGB)){
   .data <- .data[, c("X", "Y", "Z", "slope"), drop = FALSE]
-  colnames(.data) <- c("x", "y", "z", "slope")
+  colnames(.data) <- c("x", "y", "z", "slope")} else {
+    .data <- .data[, c("X", "Y", "Z", "slope", "R", "G", "B"), drop = FALSE]
+    colnames(.data) <- c("x", "y", "z", "slope", "R", "G", "B")}
 
 
   # Low point filtering
@@ -186,24 +225,28 @@ normalize <- function(las,
 
   .data$point <- (1:nrow(.data))
 
+  # Green Leaf Algorithm (GLA) (Louhaichi et al., (2001))
+  if(!is.null(RGB))
+    .data$GLA <- (2 * .data$G - .data$R - .data$B) / (2 * .data$G + .data$R + .data$B)
+
 
   # Point crooping process
   # This is a previous step to obtain a homogeneous density of points in the space
   # This is based on the principle that closer objects (with the same size and shape)
   # have more probability to recieve points
 
-  if(!is.null(multiple.scans)){
+  set.seed(12345)
 
-    .data$prob <- stats::runif(nrow(.data))
-    .data$prob.selec <- ifelse(.data$prob >= 0.5, 1, 0)
-
-  } else {
+  if(scan.approach == "single"){
 
     .data$prob <- (.data$r / max(.data$r)) ^ 2
     .data$prob.random <- stats::runif(nrow(.data))
-    .data$prob.selec <- ifelse(.data$prob >= .data$prob.random, 1, 0)
+    .data$prob.selec <- ifelse(.data$prob >= .data$prob.random, 1, 0)}
 
-  }
+  if(scan.approach == "multi"){
+
+    .data$prob <- stats::runif(nrow(.data))
+    .data$prob.selec <- ifelse(.data$prob >= 0.75, 1, 0)}
 
   # Assign id
 
@@ -230,8 +273,9 @@ normalize <- function(las,
 
   }
 
-
-  .data <- .data[, c("id", "file", "point", "x", "y", "z", "rho", "phi", "r", "theta", "slope", "prob", "prob.selec"), drop = FALSE]
+  if(is.null(RGB)){
+  .data <- .data[, c("id", "file", "point", "x", "y", "z", "rho", "phi", "r", "theta", "slope", "prob", "prob.selec"), drop = FALSE]} else {
+    .data <- .data[, c("id", "file", "point", "x", "y", "z", "rho", "phi", "r", "theta", "slope", "GLA", "prob", "prob.selec"), drop = FALSE]}
 
   .pb$tick()
 

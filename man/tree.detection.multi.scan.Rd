@@ -1,51 +1,42 @@
 \encoding{UTF-8}
 
-\name{tree.detection}
+\name{tree.detection.multi.scan}
 
-\alias{tree.detection}
+\alias{tree.detection.multi.scan}
 
-\title{Tree Detection and Cross Section Estimation}
+\title{Tree-Level Variables Estimation}
 
-\description{Detects trees from TLS point clouds corresponding to a single scan. For each tree detected, the function calculates the central coordinates and estimates the diameter at 1.3 m above ground level (which is known as \emph{dbh}, diameter at breast height) and classifies it as fully visible or partially occluded. Finally, the function obtains the number of points belonging to normal sections of trees (those corresponding to \emph{dbh} +/- 5 cm) and estimates them for both original and reduced (with point cropping process) point clouds.}
+\description{Detects trees from point clouds corresponding to TLS multi-scan approaches and SLAM devices. For each tree detected, the function calculates the central coordinates and estimates the diameter at 1.3 m above ground level (which is known as \emph{dbh}, diameter at breast height) and classifies it as fully visible or partially occluded. Finally, the function obtains the number of points belonging to normal sections of trees (those corresponding to \emph{dbh} +/- 5 cm) and estimates them for both original and reduced (with random selection process) point clouds.}
 
 \usage{
-tree.detection(data,
-               dbh.min = 7.5, dbh.max = 200,
-               ncr.threshold = 0.1,
-               tls.resolution = list(),
-               breaks = c(1.0, 1.3, 1.6),
-               plot.attributes = NULL,
-               save.result = TRUE, dir.result = NULL)}
+tree.detection.multi.scan(data,
+                          dbh.min = 4, dbh.max = 200, h.min = 1.3,
+                          ncr.threshold = 0.1,
+                          tls.precision = NULL,
+                          stem.section = NULL, breaks = NULL,
+                          d.top = NULL,
+                          plot.attributes = NULL,
+                          save.result = TRUE, dir.result = NULL)}
 
 \arguments{
 
   \item{data}{Data frame with same description and format as indicated for \code{\link{normalize}} \sQuote{Value}.}
 
-  \item{dbh.min}{Optional minimum \emph{dbh} (cm) considered for detecting trees. By default it will be set at 7.5 cm.}
+  \item{dbh.min}{Optional minimum \emph{dbh} (cm) considered for detecting trees. By default it will be set at 4 cm.}
 
   \item{dbh.max}{Optional maximum \emph{dbh} (cm) considered for detecting trees. By default it will be set at 200 cm.}
 
+  \item{h.min}{Optional minimum \emph{h} (m) considered for detecting trees. By default it will be set at 1.3 m.}
+
   \item{ncr.threshold}{Local surface variation (also known as normal change rate, NCR). By default it will be set as 0.1. For better understanding of this argument see \sQuote{Details}.}
 
-  \item{tls.resolution}{List containing parameters of TLS resolution. This can be defined by the angle aperture:}
+  \item{tls.precision}{Average point cloud precision in cm.}
 
-\itemize{
+  \item{breaks}{Height above ground level (m) of slices considered for detecting trees. By default it will be considered all possible sections from 0.4 m to maximum height by 0.3 m intervals (+/- 5 cm).}
 
-  \item {\code{horizontal.angle}}: horizontal angle aperture (degrees).
+  \item{stem.section}{Section free of noise (shurb, branches, etc.) considered to detect trees. If not specified, an automatic internal algorithm will be applied (see \sQuote{Details}).}
 
-  \item {\code{vertical.angle}}: vertical angle aperture (degrees).}
-
-  \item{}{or separation between two consecutive points at a certain distance from TLS:}
-
-  \itemize{
-
-  \item {\code{point.dist}}: distance (mm) between two consecutive points.
-
-  \item {\code{tls.dist}}: distance (m) from TLS at which two consecutive points are separated by \code{point.dist}.
-
-  If this argument is not specified by the user, it will be set to NULL by default and, as a consequence the function will stop giving an error message.}
-
-  \item{breaks}{Height above ground level (m) of slices considered for detecting trees. By default it will be 1.0, 1.3 and 1.6 m (+/- 5 cm).}
+  \item{d.top}{Top stem diameter (cm) considered to estimate commercial timber volume.}
 
   \item{plot.attributes}{Data frame with attributes at plot level. It must contain a column named \code{id} (character string or numeric value) with encoding coinciding with that used in \code{id} argument of \code{\link{normalize}} for identifying plots. If there are strata, another column named \sQuote{stratum} (numeric) will be required for other functionalities of \pkg{FORTLS} (see, for instance, \code{\link{estimation.plot.size}} or \code{\link{metrics.variables}}). If this argument is not specified by the user, it will be set to NULL by default and, as a consequence, the function will not add these possible plot attributes.}
 
@@ -58,6 +49,8 @@ tree.detection(data,
 Slices determined by \code{breaks} argument are clustered using the DBSCAN algorithm (Ester et al., 1996) on the horizontal plane according to Cartesian coordinates (x, y). Before and after this process, several algorithms are used to remove noisy points and apply classification criteria to select the clusters of trees.
 
 \emph{dbh} is directly estimated for the section of 1.3 m above ground level, and estimated from other sections using \emph{dbh}~\emph{breaks} linear regression. Finally, the mean value of all estimates is provided in \sQuote{Value} as the \emph{dbh} of the tree section.
+
+Volume is estimated modelling stem profile as a paraboloid and calculating the volumes of revolution; where trees \emph{dbh} are estimated in \code{\link{tree.detection.single.scan}}, and total heights are estimated as percentile 99 of z coordinate of points delimited by Voronoi polygons.
 
 The number of points corresponding to a normal section (+/- 5 cm) is estimated in proportion to \emph{dbh}, using the average number of points per radius unit as reference. In this respect, only tree sections fully visible at 1.3 m above ground level will be considered for estimating the average number of points.
 
@@ -81,31 +74,35 @@ Local surface variation (also known as normal change rate ,NCR), is a quantitati
 
   Azimuthal angles:
     \itemize{
-      \item \code{phi}: angular coordinate (rad) of tree centre.
-      \item \code{phi.left}: angular coordinate (rad) of left border of tree section.
-      \item \code{phi.right}: angular coordinate (rad) of right border of tree section}
+      \item \code{phi}: angular coordinate (rad) of tree centre.}
 
-\item{horizontal.distance}{horizontal distance (m) from plot centre to tree centre.}
+\item{h.dist}{horizontal distance (m) from plot centre to tree centre.}
 
 \item{\emph{dbh}}{estimated tree diameter (cm) at breast height (1.3 m).}
 
-\item{num.points}{number of points corresponding to a normal section (+/- 5 cm) in the original point cloud.}
+\item{\emph{h}}{estimated tree total height (m).}
 
-\item{num.points.hom}{number of points corresponding to a normal section (+/- 5 cm) in the point cloud reduced by the point cropping process.}
+\item{\emph{v}}{estimated tree stem volume (m^3).}
 
-\item{num.points.est}{number of points estimated for a normal section (+/- 5 cm) in the original point cloud.}
+\item{\emph{v.com}}{estimated commercial tree stem volume (m^3) according to the top diameter defined in the argument \code{d.top}.}
 
-\item{num.points.hom.est}{number of points estimated for a normal section (+/- 5 cm) in the point cloud reduced by the point cropping process.}
+\item{n.pts}{number of points corresponding to a normal section (+/- 5 cm) in the original point cloud.}
+
+\item{n.pts.red}{number of points corresponding to a normal section (+/- 5 cm) in the point cloud reduced by the point cropping process.}
+
+\item{n.pts.est}{number of points estimated for a normal section (+/- 5 cm) in the original point cloud.}
+
+\item{n.pts.red.est}{number of points estimated for a normal section (+/- 5 cm) in the point cloud reduced by the point cropping process.}
 
 \item{partial.occlusion}{yes (1) or no (0)}}
 
 \section{Output Files}{
 
-At the end of the tree detection process, if the \code{save.result} argument is \code{TRUE}, the function will save the data frame described in \sQuote{Value} as a CSV file named \sQuote{tree.list.tls.csv}. The data frame will be written without row names in the \code{dir.result} directory by using \code{\link[utils]{write.csv}} function from the \pkg{utils} package.}
+At the end of the tree detection process, if the \code{save.result} argument is \code{TRUE}, the function will save the data frame described in \sQuote{Value} as a CSV file named \sQuote{tree.tls.csv}. The data frame will be written without row names in the \code{dir.result} directory by using \code{\link[utils]{write.csv}} function from the \pkg{utils} package.}
 
 
 \note{
-Although \code{tree.detection} also works with reduced point clouds, thus reducing the computing time, use of the original point cloud is recommended in order to detect more trees. This will also depend on forest conditions, especially those related to visibility. The more distant the trees are, the lower the density of points will be, and using reduced point clouds will therefore complicate detection of the most distant trees.
+Although \code{tree.detection.multi.scan} also works with reduced point clouds, thus reducing the computing time, use of the original point cloud is recommended in order to detect more trees. This will also depend on forest conditions, especially those related to visibility. The more distant the trees are, the lower the density of points will be, and using reduced point clouds will therefore complicate detection of the most distant trees.
 
 Note that \code{dbh.min} and \code{dbh.max} are important for avoiding outlier values when inventory data are used for reference purposes. Otherwise, knowledge about the autoecology of species could be used for filtering anomalous values of \emph{dbh}.
 
@@ -126,16 +123,11 @@ Xia, S., Wang, C., Pan, F., Xi, X., Zeng, H., & Liu, H. (2015). Detecting stems 
 Zhang, W., Wan, P., Wang, T., Cai, S., Chen, Y., Jin, X., & Yan, G. (2019). A novel approach for the detection of standing tree stems from plot-level terrestrial laser scanning data. \emph{Remote Sens}. \bold{11(2)}, 211. \doi{https://doi.org/10.3390/rs11020211}}
 
 \author{
-Juan Alberto Molina-Valero,
-María José Ginzo Villamayor,
-Manuel Antonio Novo Pérez,
-Adela Martínez-Calvo,
-Juan Gabriel Álvarez-González,
-Fernando Montes and
-César Pérez-Cruzado.}
+Juan Alberto Molina-Valero
+and Adela Martínez-Calvo.}
 
 \seealso{
-\code{\link{normalize}}, \code{\link{tree.detection.multiple}}, \code{\link{distance.sampling}}, \code{\link{estimation.plot.size}}, \code{\link{simulations}}, \code{\link{metrics.variables}}
+\code{\link{normalize}}, \code{\link{tree.detection.single.scan}}, \code{\link{tree.detection.several.plots}}, \code{\link{distance.sampling}}, \code{\link{estimation.plot.size}}, \code{\link{simulations}}, \code{\link{metrics.variables}}
 }
 
 \examples{
@@ -149,37 +141,30 @@ dir.data <- getwd()
 dir.result <- getwd()
 
 
-# Loading example data (LAS file) to dir.data
+# Loading example data of TLS multi-scan approach point cloud (LAZ file) to dir.data
 
-download.file("https://www.dropbox.com/s/2c3d320o3srcawb/1.las?raw=1",
-              destfile = file.path(dir.data, "1.las"),
+download.file("https://www.dropbox.com/s/j48chrbngwoma6y/Galicia_multi_scan.laz?dl=1",
+              destfile = file.path(dir.data, "Galicia_multi_scan.laz"),
               mode = "wb")
 
-# Normalizing the point cloud data as a neccesary step for detecting trees
+# Normalizing the whole point cloud data without considering arguments
 
-pcd <- normalize(las = "1.las",
-                 max.dist = 15, min.height = 0.25, max.height = 25,
-                 id = "1", file = "1.txt",
+pcd <- normalize(las = "Galicia_multi_scan.laz",
+
+                 scan.approach = "multi",
+
+                 max.dist = 15,
+
                  dir.data = dir.data, dir.result = dir.result)
 
 
 # Tree detection without considering arguments
-# For this case study, TLS resolution was established as:
-# point.dist = 7.67 mm and tls.dist = 10 m
 
-tree.list.tls <- tree.detection(data = pcd,
-                                tls.resolution = list(point.dist = 7.67, tls.dist = 10),
-                                dir.result = dir.result)
+tree.tls <- tree.detection.multi.scan(data = pcd[pcd$prob.selec == 1, ],
 
+                                      breaks = 1.3, stem.section = c(1, 5),
 
-
-# Tree detection considering several arguments
-
-tree.list.tls <- tree.detection(data = pcd,
-                                dbh.min = 7.5, dbh.max = 60,
-                                tls.resolution = list(point.dist = 7.67, tls.dist = 10),
-                                breaks = 1.3,
-                                dir.result = dir.result)
+                                      dir.result = dir.result)
 
   }
 
