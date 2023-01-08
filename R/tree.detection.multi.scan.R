@@ -1,9 +1,10 @@
 
-tree.detection.multi.scan <- function(data,
+tree.detection.multi.scan <- function(data, single.tree = NULL,
                                       dbh.min = 4, dbh.max = 200, h.min = 1.3,
                                       ncr.threshold = 0.1, tls.precision = NULL,
                                       stem.section = NULL, breaks = NULL,
-                                      d.top = NULL,
+                                      slice = 0.1, understory = NULL, bark.roughness = 2,
+                                      den.type = 1, d.top = NULL,
                                       plot.attributes = NULL,
                                       save.result = TRUE, dir.result = NULL){
 
@@ -23,13 +24,32 @@ tree.detection.multi.scan <- function(data,
 
   #### Detecting possible areas with trees in the point cloud ####
 
+  if(!is.null(data$GLA)){
+    woody <- data[data$GLA <= 0, ]
+    woody <- woody[!is.na(woody$x) & !is.na(woody$y) & !is.na(woody$z), ]} else {woody <- data}
+
+
+  # Statistical filtering of a point cloud
+  # Implements the Statistical Outliers Removal (SOR)
+
+  message("Statistical filtering of the whole point cloud")
+
+  woody <- woody[, c("x", "y", "z")]
+  woody <- VoxR::filter_noise(data = data.table::setDT(woody), store_noise = TRUE, message = FALSE)
+
+  # noise <- woody[woody$Noise == 2, ]
+
+  woody <- woody[woody$Noise == 1, ]
+
+  woody <- merge(data, woody[, c("x", "y", "z")], by = c("x", "y", "z"), all = FALSE)
+  # noise <- merge(data, noise, by = c("x", "y", "z"), all = FALSE)
+
+
   # Detection of stem part without shrub vegetation and crown
 
-  stem <- data[data$prob.selec == 1, ]
+  message("Detecting tree stem axes")
 
-  if(!is.null(data$GLA)){
-    stem <- stem[stem$GLA <= 0, ]
-    stem <- stem[!is.na(stem$x) & !is.na(stem$y) & !is.na(stem$z), ]} else {stem <- stem}
+  stem <- woody[woody$prob.selec == 1, ]
 
 
   # Defining the vertical section in which trees are detected
@@ -50,36 +70,61 @@ tree.detection.multi.scan <- function(data,
   if(is.null(tls.precision)){
   stem <- VoxR::vox(stem[, c("x", "y", "z")], res = 0.03)} else {
     stem <- VoxR::vox(stem[, c("x", "y", "z")], res = tls.precision)}
-
   stem <- stem[, c("x", "y", "z", "npts")]
 
+  # Creation of raster with projected voxels
+
   stem <- VoxR::project_voxels(stem)
-  # plot(stem$x, stem$y, col = "grey", asp = 1, pch = 19, cex = 0.5)
-  stem <- stem[stem$npts > mean(stem$npts), ]
-  # points(stem$x, stem$y, pch = 19, cex = 0.5, col = "black")
+
+
+  # Filtering pixels - double branch peeling
+
+  stem <- stem[stem$npts > mean(stem$npts) & stem$ratio > mean(stem$ratio) & stem$nvox > mean(stem$nvox), ]
+
+  if(!is.null(understory)){
+  stem <- stem[stem$npts > mean(stem$npts) & stem$ratio > mean(stem$ratio) & stem$nvox > mean(stem$nvox), ]}
+
+  # Creation polygon to extract those projected areas in the original point cloud
+  # where trees are probably located
 
   buf <- sp::SpatialPoints(cbind(stem$x,stem$y))
   buf <- suppressWarnings(raster::buffer(buf, width = 37500, dissolve = TRUE))
   buf <- buf@polygons[[1]]@Polygons
   buf <- lapply(seq_along(buf), function(i) sp::Polygons(list(buf[[i]]), ID = i))
   buf <- sp::SpatialPolygons(buf)
-  # sp::plot(buf, col = "red")
 
   # Detection of stem part without shrub vegetation and crown
 
-  stem <- data[data$prob.selec == 1, ]
-
-  if(!is.null(data$GLA)){
-    stem <- stem[stem$GLA <= 0, ]
-    stem <- stem[!is.na(stem$x) & !is.na(stem$y) & !is.na(stem$z), ]} else {stem <- stem}
-
+  stem <- woody[woody$prob.selec == 1, ]
 
 
   # Assigning points to trees previously detected
 
   stem$tree <- sp::over(sp::SpatialPoints(coords = cbind(stem$x,stem$y,stem$z)), buf, returnlist=TRUE)
   stem <- stem[!is.na(stem$tree), ]
-  # plot(stem$x, stem$y, col = stem$tree, asp = 1)
+
+  # Filtering stems axis
+
+  stem.i <- do.call(rbind, lapply(split(stem, stem$tree), .n.w.ratio))
+  .Q1 <- stats::quantile(stem.i$n.w.ratio, prob = 0.25, na.rm = TRUE)
+  .Q3 <- stats::quantile(stem.i$n.w.ratio, prob = 0.75, na.rm = TRUE)
+  stem.i <- stem.i[stem.i$n.w.ratio > .Q1 - 1.5 * (.Q3 - .Q1) & stem.i$n.w.ratio < .Q3 + 1.5 * (.Q3 - .Q1), ]
+  stem <- stem[stem$tree %in% stem.i$tree, ]
+
+  rm(stem.i)
+
+
+  # If there is only one tree in the point cloud
+
+  if(!is.null(single.tree)){
+
+    filter <- data.frame(table(stem$tree))
+    filter <- filter[order(filter$Freq, decreasing = TRUE), ]
+    stem <- stem[stem$tree == filter$Var1[1], ]
+    stem$tree <- 1
+
+  }
+
 
   # Breaks argument
 
@@ -91,25 +136,52 @@ tree.detection.multi.scan <- function(data,
   # Defining stem axis
 
   eje <- do.call(rbind, lapply(split(stem, stem$tree), .stem.axis, scan.approach = "multi"))
+  .Q1 <- stats::quantile(eje$n.w.ratio, prob = 0.25, na.rm = TRUE)
+  .Q3 <- stats::quantile(eje$n.w.ratio, prob = 0.75, na.rm = TRUE)
+  eje <- eje[eje$n.w.ratio > .Q1 - 1.5 * (.Q3 - .Q1), ]
+  eje <- eje[eje$tree %in% eje$tree, ]
   eje <- eje[eje$sec %in% as.character(breaks) & !is.na(eje$x), ]
 
   rm(stem)
 
+  # Removing those axis ver very closed (0.25 m) to each other
+
+  eje.3 <- eje[eje$sec == 1.3, ]
+  eje.2 <- eje.3
+  dbscan <- dbscan::dbscan(eje.2[, c("x", "y"), drop = FALSE], eps = 0.25, minPts = 1)
+  eje.2$cluster <- dbscan$cluster
+  eje.2 <- eje.2[!duplicated(eje.2$cluster), ]
+  eje <- eje[eje$tree %in% eje.2$tree, ]
+
 
   # Estimating NCR threshold when RGB is available
 
-  # if(!is.null(data$GLA)){
-  #   ncr <- data[data$GLA > 0, ]
-  #   ncr <- as.matrix(ncr[, c("point", "x", "y", "z")])
-  #   ncr.threshold <- ncr_point_cloud_double(ncr[1:10000, ])
-  #   ncr.threshold <- mean(ncr.threshold$ncr, na.rm = TRUE)}
-
-
-  # Remove green parts
-
   if(!is.null(data$GLA)){
-    data <- data[data$GLA <= 0, ]
-    data <- data[!is.na(data$x) & !is.na(data$y) & !is.na(data$z), ]}
+    ncr <- data[data$GLA > 0, ]
+    ncr <- as.matrix(ncr[, c("point", "x", "y", "z")])
+    ncr.threshold <- ncr_point_cloud_double(ncr[1:10000, ])
+    ncr.threshold <- mean(ncr.threshold$ncr, na.rm = TRUE)}
+
+
+  # Assigning points to trees previously detected
+
+  woody$tree <- sp::over(sp::SpatialPoints(coords = cbind(woody$x,woody$y,woody$z)), buf, returnlist=TRUE)
+  woody <- woody[woody$tree %in% eje.3$tree, ]
+  woody <- woody[!is.na(woody$tree), ]
+
+  rm(eje.2, eje.3)
+
+
+  # If there is only one tree in the point cloud
+
+  if(!is.null(single.tree)){
+
+    filter <- data.frame(table(woody$tree))
+    filter <- filter[order(filter$Freq, decreasing = TRUE), ]
+    woody <- woody[woody$tree == filter$Var1[1], ]
+    woody$tree <- 1
+
+  }
 
 
   #### Starting with clustering process ####
@@ -123,15 +195,19 @@ tree.detection.multi.scan <- function(data,
                            phi.left = as.numeric(), phi.right = as.numeric(),
                            circ = as.numeric(), arc.circ = as.numeric(), sec = as.numeric())
 
+  # Defining slice
+
+  slice <- slice / 2
+
 
   for(cuts in breaks){
 
 
     message("Computing section: ", cuts, " m")
 
-    .cut <- data[which(data$z > (cuts-0.1) & data$z < (cuts+0.1)), , drop = FALSE]
+    .cut <- woody[which(woody$z > (cuts-slice-0.05) & woody$z < (cuts+slice+0.05)), , drop = FALSE]
 
-    if(nrow(.cut) < 100){next}
+    if(nrow(.cut) < 50){next}
 
     .cut <- .ncr.remove.slice.double(.cut)
 
@@ -140,15 +216,15 @@ tree.detection.multi.scan <- function(data,
 
     # Restrict to slice corresponding to cuts m +/- 5 cm
 
-    .cut <- .cut[which(.cut$z > (cuts-0.05) & .cut$z < (cuts+0.05)), , drop = FALSE]
+    .cut <- .cut[which(.cut$z > (cuts-slice) & .cut$z < (cuts+slice)), , drop = FALSE]
 
     # Dbscan parameters
 
-    if(is.null(tls.precision)){.eps <- .dbh.min} else {.eps <- tls.precision}
+    if(is.null(tls.precision)){.eps <- 0.03} else {.eps <- tls.precision}
 
     # Clustering
 
-    .error <- try(suppressMessages(dbscan::dbscan(.cut[, c("x", "y"), drop = FALSE], eps = .eps)))
+    .error <- try(suppressMessages(dbscan::dbscan(.cut[, c("x", "y"), drop = FALSE], eps = .eps, minPts = 15)))
     if(class(.error)[1] == "try-error"){
       message("No computed section: ", cuts, " m")
       next} else {
@@ -164,11 +240,13 @@ tree.detection.multi.scan <- function(data,
 
     .cut$sec <- cuts
 
+
     # Selection of those cluster belonging to trees
 
     .filter <- do.call(rbind, lapply(split(.cut, .cut$cluster), .sections.multi.scan,
                                      tls.precision = tls.precision,
-                                     .dbh.min = .dbh.min, .dbh.max = .dbh.max))
+                                     .dbh.min = .dbh.min, .dbh.max = .dbh.max,
+                                     slice = slice * 2, bark.roughness = bark.roughness))
 
     .filteraux <- rbind(.filteraux, .filter)
 
@@ -186,13 +264,13 @@ tree.detection.multi.scan <- function(data,
     # Generate a warning and create empty data.frame to be returned, if no row
     # was included in .filter
 
-    if(is.null(data$id) & is.null(d.top)){
+    if (is.null(data$id) & is.null(d.top)){
 
       # If plot identification (id) is not available
 
       warning("No tree was detected")
 
-      .colnames <- c("tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+      .colnames <- c("tree", "x", "y", "phi", "h.dist", "dbh", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
     } else if (is.null(data$id) & !is.null(d.top)) {
 
@@ -200,7 +278,7 @@ tree.detection.multi.scan <- function(data,
 
       warning("No tree was detected")
 
-      .colnames <- c("tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+      .colnames <- c("tree", "x", "y", "phi", "h.dist", "dbh", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
     } else if (!is.null(data$id) & is.null(d.top)) {
 
@@ -208,7 +286,7 @@ tree.detection.multi.scan <- function(data,
 
       warning("No tree was detected for plot ", data$id[1])
 
-      .colnames <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+      .colnames <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
     } else {
 
@@ -216,7 +294,7 @@ tree.detection.multi.scan <- function(data,
 
       warning("No tree was detected for plot ", data$id[1])
 
-      .colnames <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+      .colnames <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
     }
 
@@ -244,54 +322,93 @@ tree.detection.multi.scan <- function(data,
                            center.x = as.numeric(), center.y = as.numeric(),
                            center.phi = as.numeric(), center.rho = as.numeric(),
                            center.r = as.numeric(), center.theta = as.numeric(),
-                           radius = as.numeric(), radius2 = as.numeric(),
+                           radius = as.numeric(),
                            n.pts = as.numeric(), n.pts.red = as.numeric(),
                            circ = as.numeric(), arc.cir = as.numeric())
 
-  for (i in unique(.filter$tree)) {
-    # for (j in unique(.filter$sec)) {
+  if(!is.null(single.tree)){
 
-    # .filt <- .filter[.filter$tree == i & .filter$sec == j, ]
+  for (i in unique(.filter$tree)) {
+
     .filt.tree <- .filter[.filter$tree == i, ]
 
     for (j in unique(.filt.tree$sec)) {
 
       .filt <- .filt.tree[.filt.tree$sec == j, ]
 
-      .filt$dist.total <- .filt$dist / max(.filt$dist) +
-        .filt$dist.rho / max(.filt$dist.rho) +
-        .filt$dist.phi / max(.filt$dist.phi)
+      .filt$dist.total <- .filt$dist / max(.filt$dist)
 
       .filt$dist.total <- ifelse(is.nan(.filt$dist.total), 0, .filt$dist.total)
 
       .filt <- .filt[.filt$dist.total == min(.filt$dist.total), ]
 
       if(nrow(.filt) > 1)
-        .filt <- .filt[.filt$dist.rho == min(.filt$dist.rho), ]
-
-      if(nrow(.filt) > 1)
-        .filt <- .filt[.filt$dist.phi == min(.filt$dist.phi), ]
-
-      if(nrow(.filt) > 1)
         .filt <- .filt[1, ]
 
-      if(.filt$dist > 2.5 | .filt$dist.rho > 2.5 | .filt$dist.phi > 0.25){next}
+      if(.filt$dist > 2.5){next}
 
-      .filt <- .filt[, c("tree", "sec", "dist",
+      .filt <- .filt[, c("tree", "cluster", "sec", "dist",
                          "center.x", "center.y", "center.phi",
                          "center.rho", "center.r", "center.theta",
-                         "radius", "radius2", "n.pts", "n.pts.red", "circ", "arc.circ")]
+                         "radius", "n.pts", "n.pts.red", "circ", "arc.circ")]
 
       .filteraux <- rbind(.filteraux, .filt)
 
-      # .filter <- .filter[.filter$code != .filt$code, ]
+      .filter <- .filter[.filter$cluster != .filt$cluster, ]
 
     }
 
   }
 
+  } else {
 
-  # .filteraux <- .filteraux[.filteraux$dist < 2 * .filteraux$radius, ]
+    for (i in unique(.filter$tree)) {
+
+      .filt.tree <- .filter[.filter$tree == i, ]
+
+      for (j in unique(.filt.tree$sec)) {
+
+        .filt <- .filt.tree[.filt.tree$sec == j, ]
+
+        .filt$dist.total <- .filt$dist / max(.filt$dist) +
+        .filt$dist.rho / max(.filt$dist.rho) +
+        .filt$dist.phi / max(.filt$dist.phi)
+
+        .filt$dist.total <- ifelse(is.nan(.filt$dist.total), 0, .filt$dist.total)
+
+        .filt <- .filt[.filt$dist.total == min(.filt$dist.total), ]
+
+        if(nrow(.filt) > 1)
+          .filt <- .filt[.filt$dist.rho == min(.filt$dist.rho), ]
+
+        if(nrow(.filt) > 1)
+          .filt <- .filt[.filt$dist.phi == min(.filt$dist.phi), ]
+
+        if(nrow(.filt) > 1)
+          .filt <- .filt[1, ]
+
+        if(.filt$dist > 2.5 | .filt$dist.rho > 2.5 | .filt$dist.phi > 0.25){next}
+
+
+        .filt <- .filt[, c("tree", "cluster", "sec", "dist",
+                           "center.x", "center.y", "center.phi",
+                           "center.rho", "center.r", "center.theta",
+                           "radius", "n.pts", "n.pts.red", "circ", "arc.circ")]
+
+        .filteraux <- rbind(.filteraux, .filt)
+
+        .filter <- .filter[.filter$cluster != .filt$cluster, ]
+
+      }
+
+    }
+
+  }
+
+  # Removing repeated cluster
+
+  .filteraux <- .filteraux[!duplicated(.filteraux$cluster), ]
+
 
   .filteraux <- .filteraux[order(.filteraux$tree, .filteraux$sec), , drop = FALSE]
 
@@ -300,7 +417,7 @@ tree.detection.multi.scan <- function(data,
                         center.x = as.numeric(), center.y = as.numeric(),
                         center.phi = as.numeric(), center.rho = as.numeric(),
                         center.r = as.numeric(), center.theta = as.numeric(),
-                        radius = as.numeric(), radius2 = as.numeric(),
+                        radius = as.numeric(),
                         n.pts = as.numeric(), n.pts.red = as.numeric(),
                         circ = as.numeric(), arc.cir = as.numeric())
 
@@ -308,17 +425,19 @@ tree.detection.multi.scan <- function(data,
 
     .filt <- .filteraux[.filteraux$tree == i, ]
 
-    .filt <- .filt[.filt$dist < 2 * mean(.filt$radius, na.rm = TRUE), ]
+    .filt <- .filt[.filt$dist < mean(.filt$dist, na.rm = TRUE) + mean(.filt$radius, na.rm = TRUE), ]
 
     if(nrow(.filt) < 1){next}
 
-    .filt$dif <- c(0, abs(diff(.filt$radius)))
-    .filt$dif.sec <- c(0, abs(diff(.filt$sec)))
+    .filt$dif <- c(diff(.filt$radius), 0)
+    .filt$dif.sec <- c(abs(diff(.filt$sec)), 0)
     .filt$dif <- ifelse(.filt$dif.sec > 1, .filt$dif / .filt$dif.sec, .filt$dif)
 
-    while (max(.filt$dif) > 0.1) {
+    threshold <- mean(.filt$radius) / 2
 
-      .filt <- .filt[.filt$dif <= 0.1, ]
+    while (max(.filt$dif) > threshold & min(.filt$dif) < -threshold / 2) {
+
+      .filt <- .filt[.filt$dif <= threshold & .filt$dif >= -threshold / 2, ]
 
     }
 
@@ -334,17 +453,16 @@ tree.detection.multi.scan <- function(data,
 
 
   # Export all section detected
+
   .filter <- .filter[order(.filter$tree, .filter$sec), , drop = FALSE]
-  .stem <- .filter[, c("tree", "sec", "center.x",  "center.y", "radius", "radius2")]
+  .stem <- .filter[, c("tree", "sec", "center.x",  "center.y", "radius")]
   .stem$radius <- .stem$radius * 200
-  .stem$radius2 <- .stem$radius2 * 200
-  colnames(.stem) <- c("tree", "sec", "x",  "y", "dbh", "dbh2")
+  colnames(.stem) <- c("tree", "sec", "x",  "y", "dbh")
 
 
   # Calculate of taper coefficient as the slope coefficient of linear regression
 
-  # .taper <- .filter[.filter$sec >= 1 & .filter$sec <= 1.6, c("tree", "sec", "radius"), drop = FALSE]
-  .taper <- .filter[, c("tree", "sec", "radius", "radius2"), drop = FALSE]
+  .taper <- .filter[, c("tree", "sec", "radius"), drop = FALSE]
 
   .slope.tree <- data.frame(tree = as.numeric(), slope = as.numeric(), slope2 = as.numeric())
 
@@ -354,13 +472,12 @@ tree.detection.multi.scan <- function(data,
 
   if(nrow(.taper.i) < 2){
 
-    .slope <- data.frame(tree = i, slope = NA, slope2 = NA)
+    .slope <- data.frame(tree = i, slope = NA)
 
   } else {
 
     .lm <- stats::lm(radius ~ sec, data = .taper.i)
-    .lm2 <- stats::lm(radius2 ~ sec, data = .taper.i)
-    .slope <- data.frame(tree = i, slope = stats::coef(.lm)[2], slope2 = stats::coef(.lm2)[2])
+    .slope <- data.frame(tree = i, slope = stats::coef(.lm)[2])
 
   }
 
@@ -375,10 +492,12 @@ tree.detection.multi.scan <- function(data,
   # If a new column ("dif") is created containing the difference between dbh and
   # section from which radius is estimated, number of used sections (or cuts)
   # will not be important. An estimated radius will always exist
+
   .filter$dif <- 1.3 - .filter$sec
   .filter$radio.est <- ifelse(.filter$dif == 0, .filter$radius, .filter$radius + .filter$slope * .filter$dif)
-  .filter$radio.est2 <- ifelse(.filter$dif == 0, .filter$radius2, .filter$radius2 + .filter$slope2 * .filter$dif)
   .filter <- .filter[!is.na(.filter$radio.est), ]
+
+
 
   # When there are not enough tree to the linear model, and tress were
   # detected at at different sections than 1.3 m, we assume these radius
@@ -386,7 +505,7 @@ tree.detection.multi.scan <- function(data,
   # .filter$radio.est <- ifelse(is.na(.filter$radio.est), .filter$radius, .filter$radio.est)
   # .filter$radio.est2 <- ifelse(is.na(.filter$radio.est2), .filter$radius2, .filter$radio.est2)
 
-  .radio.est <- data.frame(radio.est = as.numeric(), radio.est2 = as.numeric())
+  .radio.est <- data.frame(radio.est = as.numeric())
 
   for (i in unique(.filter$tree)) {
 
@@ -406,19 +525,22 @@ tree.detection.multi.scan <- function(data,
 
       .dat <- .dat[.dat$dif == 0 | .dat$dif == .dat$dif[2], ]
 
-    } else{
+    } else {
 
       .dat <- .dat[.dat$dif == min(.dat$dif), ]
 
     }
 
 
-    .out <- data.frame(radio.est = mean(.dat$radio.est, na.rm = TRUE), radio.est2 = mean(.dat$radio.est2, na.rm = TRUE))
+    .out <- data.frame(radio.est = mean(.dat$radio.est, na.rm = TRUE))
     .radio.est <- rbind(.radio.est, .out)
 
   }
 
+
+
   # Tree normal section coordinates
+
   .filteraux <- data.frame(tree = as.numeric(),
 
                         center.x = as.numeric(),
@@ -432,9 +554,8 @@ tree.detection.multi.scan <- function(data,
                         sec.y = as.numeric(),
                         sec.max = as.numeric(),
 
-                        horizontal.distance = as.numeric(), # repeated line
+                        horizontal.distance = as.numeric(),
                         radius = as.numeric(),
-                        radius2 = as.numeric(),
 
                         partial.occlusion = as.numeric(),
 
@@ -468,8 +589,10 @@ tree.detection.multi.scan <- function(data,
   }
 
 
-  # Dendrometric variables
+  # Genrating dendrometric variables
+
   .tree <- data.frame(tree = tapply(.filteraux$tree, .filteraux$tree, mean, na.rm = TRUE),
+                      filter = tapply(.filteraux$tree, .filteraux$tree, length),
 
                       x = tapply(.filteraux$center.x, .filteraux$tree, mean, na.rm = TRUE),
                       y = tapply(.filteraux$center.y, .filteraux$tree, mean, na.rm = TRUE),
@@ -485,7 +608,6 @@ tree.detection.multi.scan <- function(data,
 
                       horizontal.distance = tapply(.filteraux$center.rho, .filteraux$tree, mean, na.rm = TRUE), # repeated line
                       radius = .radio.est$radio.est,
-                      radius2 = .radio.est$radio.est2,
 
                       partial.occlusion = tapply(.filteraux$arc.circ, .filteraux$tree, min, na.rm = TRUE),
 
@@ -494,24 +616,95 @@ tree.detection.multi.scan <- function(data,
 
   rm(.filteraux)
 
+
+  # Selecting only those trees with more than one section detected when more than two breaks have been specified
+
+  if(length(breaks) > 3)
+    .tree <- .tree[.tree$filter > 1, ]
+
   # Ordering by distance and numbering trees from 1 to n trees
+
   .tree <- .tree[!duplicated(.tree$x) & !duplicated(.tree$y), ]
+  # .tree <- .tree[!duplicated(.tree$sec.x) & !duplicated(.tree$sec.y), ]
   .tree <- .tree[.tree$radius > 0, ]
   .tree <- .tree[order(.tree$rho), ]
   .tree$tree <- 1:nrow(.tree)
 
+
+  # Detecting possible trees overlaped
+
+  .tree.2 <- data.frame(tree = as.numeric(), filter = as.numeric(),
+
+                        x = as.numeric(), y = as.numeric(),
+
+                        sec.x = as.numeric(), sec.y = as.numeric(), sec.max = as.numeric(),
+
+                        phi = as.numeric(), rho = as.numeric(), r = as.numeric(), theta = as.numeric(),
+
+                        horizontal.distance = as.numeric(), radius = as.numeric(),
+
+                        partial.occlusion = as.numeric(),
+
+                        n.pts = as.numeric(), n.pts.red = as.numeric())
+
+
+  for (i in unique(.tree$tree)) {
+
+    if(nrow(.tree[.tree$tree == i, ]) < 1)
+      next
+
+    .filt <- .tree[.tree$tree == i, ]
+    .filteraux <- .tree[.tree$tree != i, ]
+
+    .filteraux$dist <- sqrt((.filteraux$x - .filt$x) ^ 2 + (.filteraux$y - .filt$y) ^ 2) - .filteraux$radius - .filt$radius
+
+    if(min(.filteraux$dist) < 0){
+
+      .filteraux <- .filteraux[.filteraux$dist < 0, ]
+      .filt <- rbind(.filt, .filteraux[ , -ncol(.filteraux)])
+      .filt <- .filt[.filt$filter == max(.filt$filter), ]
+
+      if(nrow(.filt) > 1)
+        .filt <- .filt[.filt$partial.occlusion > 0, ]
+
+
+      if(nrow(.filt) > 1)
+        .filt <- .filt[1, ]
+
+      .tree <- .tree[.tree$tree != .filteraux$tree[.filteraux$dist < 0], ]
+
+      .tree.2 <- rbind(.tree.2, .filt)
+
+
+    } else {
+
+      .tree.2 <- rbind(.tree.2, .filt)
+
+    }
+
+  }
+
+  .tree <- .tree.2
+
+  rm(.tree.2)
+
+  .tree$tree <- 1:nrow(.tree)
+
+
   # Indicate trees with partial occlusions, those for which none of the sections
   # was identified as circumference arch (ArcCirc)
+
   .tree$partial.occlusion <- ifelse(.tree$partial.occlusion == 0, 1, 0)
 
   # Compute dbh (cm)
+
   .tree$dbh <- .tree$radius * 200
-  .tree$dbh2 <- .tree$radius2 * 200
 
 
   # Calculate points belonging to radius unit
   # Since it will be an estimation, select sections completely visible
   # (ArcCirc == 1) in section corresponding to 1.3 m (where dbh is estimated)
+
   .filter$filter <- ifelse(.filter$sec == 1.3 & .filter$circ == 1, 1, 0)
   .filter2 <- subset(.filter, .filter$filter == 1)
 
@@ -520,15 +713,18 @@ tree.detection.multi.scan <- function(data,
 
   # Estimate number of points by cluster, with and without point cropping
   # process, corresponding to radius 1 m
+
   .filter2$points.radio <- .filter2$n.pts / .filter2$radius
   .filter2$points.radio.hom <- .filter2$n.pts.red / .filter2$radius
 
   # Average points after point cropping by m of radius
+
   .tree$points.m <- mean(.filter2$points.radio)
   .tree$points.m.hom <- mean(.filter2$points.radio.hom)
 
   # Finally, compute number of points estimated for each tree according to
   # radius
+
   .tree$n.pts.est <- .tree$points.m * .tree$radius
   .tree$n.pts.red.est <- .tree$points.m.hom * .tree$radius
 
@@ -536,6 +732,7 @@ tree.detection.multi.scan <- function(data,
   #### Estimating tree heights ####
 
   # Obtaining reduced point cloud
+
   data <- data[data$z >= h.min & data$prob > 0.9, ]
   data <- data[, c("id", "file", "x", "y", "z", "rho")]
 
@@ -543,7 +740,7 @@ tree.detection.multi.scan <- function(data,
 
   if(nrow(.tree) == 1){
 
-    .P99 <- data.frame(tree = .tree$tree, P99.9 = stats::quantile(data$z, prob = 0.999))
+    .P99 <- data.frame(tree = .tree$tree, h = stats::quantile(data$z, prob = 0.9999999999))
 
   } else {
 
@@ -565,7 +762,6 @@ tree.detection.multi.scan <- function(data,
   .voro <- suppressWarnings(sf::st_intersection(.voro, .voronoi))
 
   .voronoi <- sf::st_collection_extract(sf::st_voronoi(do.call(c, sf::st_geometry(.tree.2))))
-  # .voronoi <- sf::st_collection_extract(sf::st_buffer(dist = .sec$radius * 3, do.call(c, sf::st_geometry(.tree.2))))
 
   .tree.3 <- sf::st_intersects(.voronoi, .tree.2)
   .tree.3 <- data.frame(id = 1:length(.tree.3),
@@ -579,17 +775,22 @@ tree.detection.multi.scan <- function(data,
                  function(id, voro, tree.3) {
                    sec.max <- .tree.3[.tree.3$id == id, "sec.max"]
                    z <- voro$z[voro$tree == id & voro$z > sec.max]
-                   P99 <-
-                     height_perc_cpp(rho_seq = Inf, z = z, rho = z)[, "P99.9"]
-                   names(P99) <- tree.3[tree.3$id == id, "tree"]
+                   if(length(z) < 1) {
+                     P99 <- 0
+                     names(P99) <- tree.3[tree.3$id == id, "tree"]
+                   } else {
+                     P99 <-
+                       height_perc_cpp(rho_seq = Inf, z = z, rho = z)[, "P99.9"]
+                     names(P99) <- tree.3[tree.3$id == id, "tree"]}
                    return(P99)
                  },
                  voro = .voro, tree.3 = .tree.3)
   .P99 <- data.frame(tree = names(.P99), h = .P99)
 
+  rm(.tree.2, .tree.3, .voro)
+
   }
 
-  rm(.tree.2, .tree.3, .voro)
 
   # Remove possible trees above "h.min" (1.3 m by default)
 
@@ -606,15 +807,16 @@ tree.detection.multi.scan <- function(data,
   .stem <- merge(.stem, .tree[, c("tree", "h")], by = "tree")
   .stem <- .stem[.stem$sec != 1.3, ]
   .tree$sec <- 1.3
-  .stem <- rbind(.stem, .tree[, c("tree", "sec", "x", "y", "dbh", "dbh2", "h")])
+  .stem <- rbind(.stem, .tree[, c("tree", "sec", "x", "y", "dbh", "h")])
   .tree <- .tree[, -ncol(.tree)]
   .stem <- .stem[order(.stem$tree, .stem$sec), , drop = FALSE]
-  colnames(.stem) <- c("tree", "sec", "x", "y", "dhi", "dhi2", "h")
+  colnames(.stem) <- c("tree", "sec", "x", "y", "dhi", "h")
   .stem <- merge(.stem, .tree[, c("tree", "dbh")], by = "tree", all.x = TRUE)
-  colnames(.stem) <- c("tree", "hi", "x", "y", "dhi", "dhi2", "h", "dbh")
+  colnames(.stem) <- c("tree", "hi", "x", "y", "dhi", "h", "dbh")
 
   # Cheking the trees h
-  .stem <- merge(.stem[, c("tree", "hi", "x", "y", "dhi", "dhi2", "dbh")],
+
+  .stem <- merge(.stem[, c("tree", "hi", "x", "y", "dhi", "dbh")],
                  data.frame(tree = unique(.stem$tree),
                             h = do.call(rbind, lapply(split(.stem[, c("hi", "h")], .stem$tree), max))),
                  all.x = TRUE, by = "tree")
@@ -634,11 +836,25 @@ tree.detection.multi.scan <- function(data,
     .tree <- merge(.tree, stem.v, all = TRUE)
 
 
+  } else if (length(table(.stem$hi)) <= 3 & !is.null(d.top)) {
+
+  den.type <- 1
+  n <- den.type
+
+  # Estimating volume according to dendrometric type
+
+  .tree$v <- pi * (.tree[, "h"] ^ (n + 1) / (n + 1)) * ((.tree[, "dbh"] / 200) ^ 2 / (.tree[, "h"] - 1.3) ^ n)
+  h.lim <- (((d.top / 200) ^ 2) / ((.tree[, "dbh"] / 200) ^ 2 / (.tree[, "h"] - 1.3) ^ n)) ^ (1 / n)
+  .tree$v.com <- pi * ((.tree[, "h"] ^ (n + 1) - h.lim ^ (n + 1)) / (n + 1)) * ((.tree[, "dbh"] / 200) ^ 2 / (.tree[, "h"] - 1.3) ^ n)
+  .tree$v.com <- ifelse(.tree$v.com < 0, 0, .tree$v.com)
+  .tree$h.com <- h.lim
+
   } else {
 
-  # Paraboloid volume
+    den.type <- 1
+    n <- den.type
 
-  .tree$v <- pi * (.tree[, "h"] ^ 2 / 2) * ((.tree[, "dbh"] / 200) ^ 2 / (.tree[, "h"] - 1.3) ^ 2)
+  .tree$v <- pi * (.tree[, "h"] ^ (n + 1) / (n + 1)) * ((.tree[, "dbh"] / 200) ^ 2 / (.tree[, "h"] - 1.3) ^ n)
 
   }
 
@@ -651,15 +867,16 @@ tree.detection.multi.scan <- function(data,
 
 
   # If plot identification (id) is not available
+
   if(is.null(data$id) & is.null(.tree$v.com)){
 
-    .tree <- .tree[, c("tree", "x", "y", "phi", "horizontal.distance", "dbh", "dbh2", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
-    colnames(.tree) <- c("tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+    .tree <- .tree[, c("tree", "x", "y", "phi", "horizontal.distance", "dbh", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
+    colnames(.tree) <- c("tree", "x", "y", "phi", "h.dist", "dbh", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
   } else if (is.null(data$id) & !is.null(.tree$v.com)) {
 
-    .tree <- .tree[, c("tree", "x", "y", "phi", "horizontal.distance", "dbh", "dbh2", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
-    colnames(.tree) <- c("tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+    .tree <- .tree[, c("tree", "x", "y", "phi", "horizontal.distance", "dbh", "h", "h.com", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
+    colnames(.tree) <- c("tree", "x", "y", "phi", "h.dist", "dbh", "h", "h.com", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
 
   } else if (!is.null(data$id) & is.null(.tree$v.com)) {
@@ -669,8 +886,8 @@ tree.detection.multi.scan <- function(data,
     .tree$id <- data$id[1]
     .tree$file <- data$file[1]
 
-    .tree <- .tree[, c("id", "file", "tree", "x", "y", "phi", "horizontal.distance", "dbh", "dbh2", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
-    colnames(.tree) <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+    .tree <- .tree[, c("id", "file", "tree", "x", "y", "phi", "horizontal.distance", "dbh", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
+    colnames(.tree) <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "h", "v", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
   } else {
 
@@ -679,14 +896,21 @@ tree.detection.multi.scan <- function(data,
     .tree$id <- data$id[1]
     .tree$file <- data$file[1]
 
-    .tree <- .tree[, c("id", "file", "tree", "x", "y", "phi", "horizontal.distance", "dbh", "dbh2", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
-    colnames(.tree) <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "dbh2", "h", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
+    .tree <- .tree[, c("id", "file", "tree", "x", "y", "phi", "horizontal.distance", "dbh", "h", "h.com", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion"), drop = FALSE]
+    colnames(.tree) <- c("id", "file", "tree", "x", "y", "phi", "h.dist", "dbh", "h", "h.com", "v", "v.com", "n.pts", "n.pts.red", "n.pts.est", "n.pts.red.est", "partial.occlusion")
 
   }
 
   rm(.stem)
 
   }
+
+  # Removing values of 0 in n.pts
+  .tree$n.pts <- ifelse(.tree$n.pts < 1, 0.01, .tree$n.pts)
+  .tree$n.pts.red <- ifelse(.tree$n.pts.red < 1, 0.01, .tree$n.pts.red)
+  .tree$n.pts.est <- ifelse(.tree$n.pts.est < 1, 0.01, .tree$n.pts.est)
+  .tree$n.pts.red.est <- ifelse(.tree$n.pts.red.est < 1, 0.01, .tree$n.pts.red.est)
+
 
   # Lastly, aggregate attributes table
   if(!is.null(plot.attributes))
@@ -702,6 +926,7 @@ tree.detection.multi.scan <- function(data,
 
 
   #####
+
   return(.tree)
 
 }

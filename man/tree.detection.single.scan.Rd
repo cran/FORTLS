@@ -14,7 +14,8 @@ tree.detection.single.scan(data,
                            ncr.threshold = 0.1,
                            tls.resolution = list(),
                            stem.section = NULL, breaks = NULL,
-                           d.top = NULL,
+                           slice = 0.1, understory = NULL, bark.roughness = 2,
+                           den.type = 1, d.top = NULL,
                            plot.attributes = NULL,
                            save.result = TRUE, dir.result = NULL)}
 
@@ -44,9 +45,17 @@ tree.detection.single.scan(data,
 
   If this argument is not specified by the user, it will be set to NULL by default and, as a consequence the function will stop giving an error message.}
 
+  \item{stem.section}{Section free of noise (shurb, branches, etc.) considered to detect trees. If not specified, an automatic internal algorithm will be applied (see \sQuote{Details}).}
+
   \item{breaks}{Height above ground level (m) of slices considered for detecting trees. By default it will be considered all possible sections from 0.1 m to maximum height by 0.3 m intervals (+/- 5 cm).}
 
-  \item{stem.section}{Section free of noise (shurb, branches, etc.) considered to detect trees. If not specified, an automatic internal algorithm will be applied (see \sQuote{Details}).}
+  \item{slice}{Slice width considered for detecting trees. By default it will be considered as 0.1 m.}
+
+  \item{understory}{Optional argument to indicate if there is dense understory vegetation.}
+
+  \item{bark.roughness}{Bark roughness established in 3 degrees (1 < 2 < 3). By default it will be considered as 2.}
+
+  \item{den.type}{Numeric argument indicating the dendrometic type used to estimate volumen when there are not sections enough to fit a taper equation. Dendrometrics types available are the following: cylinder = 0, paraboloid = 1 (by default), cone = 2 and neiloid = 3.}
 
   \item{d.top}{Top stem diameter (cm) considered to estimate commercial timber volume.}
 
@@ -154,7 +163,7 @@ dir.result <- getwd()
 
 # Loading example data (LAZ file) to dir.data
 
-download.file("https://www.dropbox.com/s/v9tomu358xgho25/Galicia_single_scan.laz?dl=1",
+download.file("https://www.dropbox.com/s/4qvrh7tp3kq0hyo/Galicia_single_scan.laz?dl=1",
               destfile = file.path(dir.data, "Galicia_single_scan.laz"),
               mode = "wb")
 
@@ -163,7 +172,7 @@ download.file("https://www.dropbox.com/s/v9tomu358xgho25/Galicia_single_scan.laz
 
 pcd <- normalize(las = "Galicia_single_scan.laz",
 
-                 max.dist = 15,
+                 max.dist = 10,
 
                  dir.data = dir.data, dir.result = dir.result)
 

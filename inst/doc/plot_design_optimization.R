@@ -11,7 +11,6 @@ load("Rioja.data.RData")
 load("Rioja.simulations.RData")
 tree.tls <- Rioja.data$tree.tls
 tree.field <- Rioja.data$tree.field
-sim <- simulations$fixed.area
 dir.data <- system.file("exdata", package="FORTLS")
 library(FORTLS)
 
@@ -21,28 +20,70 @@ estimation.plot.size(tree.tls = tree.tls,
                      dbh.min = 4,
                      average = TRUE, all.plot.designs = FALSE)
 
-## ----eval=FALSE---------------------------------------------------------------
-#  sim <- simulations(tree.tls, tree.ds = NULL, tree.field,
+## ----eval=FALSE, include=TRUE-------------------------------------------------
+#  simulations <- simulations(tree.tls = tree.tls, tree.ds = tree.ds, tree.field = tree.field,
 #              plot.design = c("fixed.area", "k.tree", "angle.count"),
 #              plot.parameters = data.frame(radius.max = 25, k.max = 50, BAF.max = 4),
 #              scan.approach = "single", var.metr = list(tls = NULL, field = NULL),
 #              dbh.min = 4, h.min = 1.3, max.dist = Inf,
 #              dir.data = dir.data, save.result = FALSE, dir.result = NULL)
 
-## ----eval=FALSE---------------------------------------------------------------
-#  bias <- relative.bias(simulations = list(fixed.area=sim),
-#                variables = c("N", "G", "d", "dg", "d.0", "h", "h.0"),
-#                save.result = FALSE, dir.result = NULL)
-#  bias$fixed.area
+## ----eval=FALSE, include=TRUE-------------------------------------------------
+#  head(simulations$fixed.area)
+
+## ----echo=FALSE---------------------------------------------------------------
+kableExtra::scroll_box(kable_input = kableExtra::kable(head(Rioja.simulations$fixed.area), 
+                                                       format = "html"), width = "100%")
+
+## ----eval=FALSE, include=TRUE-------------------------------------------------
+#  tail(simulations$fixed.area)
+
+## ----echo=FALSE---------------------------------------------------------------
+kableExtra::scroll_box(kable_input = kableExtra::kable(tail(Rioja.simulations$fixed.area), 
+                                                       format = "html"), width = "100%")
+
+## ----eval=TRUE----------------------------------------------------------------
+bias <- relative.bias(simulations = Rioja.simulations,
+              variables = c("N", "G", "d", "dg", "d.0", "h", "h.0"),
+              save.result = FALSE, dir.result = NULL)
+
+## ----eval=FALSE, include=TRUE-------------------------------------------------
+#  head(bias$fixed.area)
+
+## ----echo=FALSE---------------------------------------------------------------
+kableExtra::scroll_box(kable_input = kableExtra::kable(head(bias$fixed.area), 
+                                                       format = "html"), width = "100%")
+
+## -----------------------------------------------------------------------------
+fixed.area.simulations <- list(fixed.area = Rioja.simulations$fixed.area[Rioja.simulations$fixed.area$radius < 7.5, ])
+cor <- correlations(simulations = fixed.area.simulations,
+             variables = c("N", "G", "d", "dg", "d.0", "h", "h.0"),
+             method = c("pearson", "spearman"), 
+             save.result = FALSE, dir.result = NULL)
+
+## ----eval=FALSE, include=TRUE-------------------------------------------------
+#  cor$correlations$pearson$fixed.area[20:26,1:15]
+
+## ----echo=FALSE---------------------------------------------------------------
+kableExtra::scroll_box(kable_input = kableExtra::kable(
+  cor$correlations$pearson$fixed.area[20:26,1:15], format = "html"), width = "100%")
+
+## ----eval=FALSE, include=TRUE-------------------------------------------------
+#  cor$correlations.pval$pearson$fixed.area[20:26,1:15]
+
+## ----echo=FALSE---------------------------------------------------------------
+kableExtra::scroll_box(kable_input = kableExtra::kable(
+  cor$correlations.pval$pearson$fixed.area[20:26,1:15], format = "html"), width = "100%")
+
+## ----eval=FALSE, include=TRUE-------------------------------------------------
+#  cor$opt.correlations$pearson$fixed.area[20:26,]
+
+## ----echo=FALSE---------------------------------------------------------------
+kableExtra::scroll_box(kable_input = kableExtra::kable(
+  cor$opt.correlations$pearson$fixed.area[20:26,], format = "html"), width = "100%")
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  cor <- correlations(simulations = list(fixed.area=sim),
-#               variables = c("N", "G", "d", "dg", "d.0", "h", "h.0"),
-#               method = c("pearson", "spearman"), save.result = FALSE,
-#               dir.result = NULL)
-
-## ----eval=FALSE---------------------------------------------------------------
-#  optimize.plot.design(correlations = cor,
+#  optimize.plot.design(correlations = cor$opt.correlations,
 #                       variables = c("N", "G", "d", "dg", "d.0", "h", "h.0"),
 #                       dir.result = NULL)
 

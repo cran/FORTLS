@@ -1,7 +1,7 @@
 
 
 
-.sections.single.scan <- function(cut, .cut, .alpha.v, .alpha.h, .dbh.min, .dbh.max){
+.sections.single.scan <- function(cut, .cut, .alpha.v, .alpha.h, .dbh.min, .dbh.max, slice, bark.roughness){
 
   .filter <- data.frame(cluster = as.numeric(),
 
@@ -29,14 +29,23 @@
   # Select cluster i
   .dat <- cut
 
+  # plot(.dat$x, .dat$y, asp = 1)
+  # kk <- data.frame(x = tapply(.dat$x, .dat$cluster, mean),
+  #                  y = tapply(.dat$y, .dat$cluster, mean),
+  #                  cluster = tapply(.dat$cluster, .dat$cluster, mean))
+  # text(kk$x, kk$y, col = "red")
+
+  # .dat <- .cut[.cut$cluster == 19, ]
+  # plot(.dat$phi, .dat$z)
+
   # First filter
-  .n <- (0.1 / (tan(.alpha.v / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2))
+  .n <- (slice / (tan(.alpha.v / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2))
 
   if(nrow(.dat) < .n){return(.filter)}
 
   # Second filter
 
-  .h <- (tan(.alpha.h / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2)
+  .h <- 3 * (tan(.alpha.h / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2)
 
   # Compute rho coordinates for section ends
 
@@ -83,7 +92,7 @@
   .x.values <- seq(from = .xmin, to = .xmax, by = .h)
   .y.values <- seq(from = .ymin, to = .ymax, by = .h)
 
-  .h <- .h / 2
+  # .h <- .h / 2
 
   .density <- matrix(0, ncol = length(.x.values), nrow = length(.y.values))
 
@@ -105,7 +114,9 @@
 
 
   # Estimate mean density by cell
-  .threeshold <- stats::median(.density, na.rm = TRUE)
+  # .threeshold <- stats::median(.density, na.rm = T)
+  # .threeshold <- mean(.density, na.rm = T)
+  .threeshold <- stats::quantile(.density, prob = 0.25, na.rm = T)
 
   if(is.nan(.threeshold) | is.na(.threeshold)){return(.filter)}
 
@@ -141,11 +152,11 @@
 
   if(is.nan(mean(.dat$slope, na.rm = TRUE))){
 
-    .n <- (0.1 / (tan(.alpha.v / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2))
+    .n <- (slice / (tan(.alpha.v / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2))
 
   } else {
 
-    .n <- (0.1 / (tan(.alpha.v / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2))
+    .n <- (slice / (tan(.alpha.v / 2) * (mean(.dat$r) / cos(mean(.cut$slope, na.rm = TRUE))) * 2))
 
   }
 
@@ -236,7 +247,13 @@
 
   # Radius value as the mean distance
   # .dat <- .dat[order(.dat$dist, decreasing = FALSE), , drop = FALSE]
-  .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.25) & .dat$dist<stats::quantile(.dat$dist, prob = 0.9)])
+  if(bark.roughness == 1){
+    .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.25) & .dat$dist<stats::quantile(.dat$dist, prob = 0.99)])
+  } else if(bark.roughness == 2){
+    .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.5) & .dat$dist<stats::quantile(.dat$dist, prob = 0.99)])
+  } else {
+  .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.75) & .dat$dist<stats::quantile(.dat$dist, prob = 0.99)])}
+
   if(.radio <= 0 | is.na(.radio)){return(.filter)}
 
   # Coefficient of variation for distances among cluster points and the estimated center
@@ -362,7 +379,7 @@
 
 
 
-.sections.multi.scan <- function(cut, tls.precision, .dbh.min, .dbh.max){
+.sections.multi.scan <- function(cut, tls.precision, .dbh.min, .dbh.max, slice, bark.roughness){
 
   .filter <- data.frame(cluster = as.numeric(),
 
@@ -388,8 +405,9 @@
 
 
   .dat <- cut
+  # .dat <- .cut[.cut$cluster == 12, ]
 
-  if(nrow(.dat) < 10){return(.filter)}
+  if(nrow(.dat) < 25){return(.filter)}
 
   # plot(.dat$x, .dat$y, asp = 1, main = i)
 
@@ -439,7 +457,9 @@
 
 
   # Estimate mean density by cell
-  .threeshold <- stats::median(.density, na.rm = T)
+  # .threeshold <- stats::median(.density, na.rm = T)
+  # .threeshold <- mean(.density, na.rm = T)
+  .threeshold <- stats::quantile(.density, prob = 0.25, na.rm = T)
 
   if(is.nan(.threeshold) | is.na(.threeshold)){return(.filter)}
 
@@ -450,9 +470,9 @@
     for(j in 1:length(.y.values)){
 
       .den <- .dat[which(.dat$x <= ((.x.values[i]) + .h) &
-                           .dat$x > ((.x.values[i]) - .h) &
-                           .dat$y <= ((.y.values[j]) + .h) &
-                           .dat$y > ((.y.values[j]) - .h)), , drop = FALSE]
+                         .dat$x > ((.x.values[i]) - .h) &
+                         .dat$y <= ((.y.values[j]) + .h) &
+                         .dat$y > ((.y.values[j]) - .h)), , drop = FALSE]
 
       # Discard cells with less than 2 points for computing mean density by
       # cell
@@ -470,6 +490,8 @@
   }
 
   .dat <- merge(.dat, .remove, by = "point", all.y = TRUE)
+  # .noise <- subset(.dat, !(point %in% .remove$point))
+
 
   if(nrow(.dat) < 1){return(.filter)}
 
@@ -520,20 +542,14 @@
   .dat$dist <- raster::pointDistance(cbind(.dat$x,.dat$y), c(.x.values[.a[2]], .y.values[.a[1]]), lonlat = FALSE)
 
   # Radius value as the mean distance
-  # .dat <- .dat[order(.dat$dist, decreasing = FALSE), , drop = FALSE]
-  # plot(.dat$x, .dat$y, asp = 1)
-  .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.25) & .dat$dist<stats::quantile(.dat$dist, prob = 0.9)])
+  if(bark.roughness == 1){
+    .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.25) & .dat$dist<stats::quantile(.dat$dist, prob = 0.95)])
+  } else if(bark.roughness == 2){
+    .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.5) & .dat$dist<stats::quantile(.dat$dist, prob = 0.95)])
+  } else {
+    .radio <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.75) & .dat$dist<stats::quantile(.dat$dist, prob = 0.95)])}
+
   if(.radio <= 0 | is.na(.radio)){return(.filter)}
-
-  # xyc4<-conicfit::calculateCircle(.center.x,.center.y,.radio)
-  # points(xyc4[,1],xyc4[,2],col='red',type='l')
-
-
-  # c4 <- conicfit::LMcircleFit(as.matrix(.dat[.dat$dist>stats::quantile(.dat$dist, prob = 0.25), c("x", "y")]))
-  # xyc4<-conicfit::calculateCircle(c4[1],c4[2],c4[3])
-  # points(xyc4[,1],xyc4[,2],col='cyan',type='l')
-  # .radio2 <- c4[3]
-  .radio2 <- mean(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.5) & .dat$dist<stats::quantile(.dat$dist, prob = 0.9)])
 
   # Coefficient of variation for distances among cluster points and the estimated center
   .cv <- stats::sd(.dat$dist[.dat$dist>stats::quantile(.dat$dist, prob = 0.25)]) / .radio
@@ -583,8 +599,6 @@
 
   }
 
-  # plot(.dat$x, .dat$y, asp = 1, main = paste(.cluster, .circ, .arc.circ, sep = " "))
-
 
   # Zhang et al., (2019)
   .n.w.ratio <- stats::sd(.dat$z) / sqrt(stats::sd(.dat$x) ^ 2 + stats::sd(.dat$y) ^ 2)
@@ -594,7 +608,7 @@
   .densidad_radio <- .n.pts.red / .radio
 
 
-  if(nrow(.dat) < 15){return(.filter)}
+  if(nrow(.dat) < 10){return(.filter)}
 
 
   # Results
@@ -604,7 +618,7 @@
                         center.phi = .center.phi, center.rho = .center.rho,
                         center.r = .center.r, center.theta = .center.theta,
 
-                        radius = .radio, radius2 = .radio2,
+                        radius = .radio,
 
                         n.pts = .n.pts, n.pts.red = .n.pts.red,
 
@@ -625,8 +639,8 @@
 # .filter <- .filter[which(.filter$tree == 1), , drop = FALSE]
 
 .filter$tree <- ifelse(.filter$circ == 1 & .filter$density.radio >= .outliers, 1,
-                       ifelse(.filter$arc.circ == 1 & .filter$occlusion > 0.95 & .filter$density.radio >= .outliers, 1,
-                              ifelse(.filter$circ == 0 & .filter$arc.circ == 0 & .filter$occlusion > 0.975 & .filter$density.radio >= .outliers, 1, 0)))
+                       ifelse(.filter$arc.circ == 1 & .filter$occlusion >= 0.95 & .filter$density.radio >= .outliers, 1,
+                              ifelse(.filter$circ == 0 & .filter$arc.circ == 0 & .filter$occlusion >= 0.975 & .filter$density.radio >= .outliers, 1, 0)))
 .filter <- .filter[which(.filter$tree == 1), , drop = FALSE]
 
 # Dbh maximum and minimum
@@ -640,7 +654,7 @@ if(nrow(.filter) < 1){
                            center.x = as.numeric(), center.y = as.numeric(),
                            center.phi = as.numeric(), center.rho = as.numeric(),
                            center.r = as.numeric(), center.theta = as.numeric(),
-                           radius = as.numeric(), radius2 = as.numeric(),
+                           radius = as.numeric(),
                            n.pts = as.numeric(), n.pts.red = as.numeric(),
                            circ = as.numeric(), arc.circ = as.numeric(), sec = as.numeric())
 
@@ -648,7 +662,7 @@ if(nrow(.filter) < 1){
 
   .filter1.0 <- .filter[, c("cluster",
                             "center.x", "center.y", "center.phi", "center.rho", "center.r", "center.theta",
-                            "radius", "radius2", "n.pts", "n.pts.red", "circ", "arc.circ"), drop = FALSE]
+                            "radius", "n.pts", "n.pts.red", "circ", "arc.circ"), drop = FALSE]
 
   .filter1.0$sec <- cut$sec[1]
 
@@ -660,6 +674,13 @@ if(nrow(.filter) < 1){
 }
 
 
+.n.w.ratio <- function(stem){
+
+  n.w.ratio <- stats::sd(stem$z) / sqrt(stats::sd(stem$x) ^ 2 + stats::sd(stem$y) ^ 2)
+  out <- data.frame(tree = stem$tree[1], n.w.ratio = n.w.ratio)
+  return(out)
+
+}
 
 
 
@@ -783,10 +804,10 @@ if(nrow(.filter) < 1){
       }
 
       volume.i <- data.frame(tree = i,
-                             v = vol_m3(tree$dbh[1], tree$h[1], 0, tree$h[1],
-                                        b1),
-                             v.com = vol_m3(tree$dbh[1], tree$h[1], 0, h.lim,
-                                            b1))
+                             v = vol_m3(tree$dbh[1], tree$h[1], 0, tree$h[1], b1),
+                             v.com = vol_m3(tree$dbh[1], tree$h[1], 0, h.lim, b1),
+                             h.com = h.lim)
+
       volume <- rbind(volume, volume.i)
 
     }
@@ -801,14 +822,14 @@ if(nrow(.filter) < 1){
 .stem.axis <- function(data, scan.approach = "single"){
 
   if(scan.approach == "multi"){
-    data <- data[data$prob > 0.9, ]} else {
+    data <- data[data$prob > 0.75, ]} else {
 
     data <- data[data$prob < 0.1 | data$prob > 0.9, ]}
 
 
-  if(nrow(data) < 50 | min(data$z) > 2){
+  if(nrow(data) < 100 | nrow(data) > 1000000 | min(data$z) > 1.3){
 
-    eje <- data.frame(tree = as.numeric(), sec = as.numeric(), x = as.numeric(), y = as.numeric())
+    eje <- data.frame(tree = as.numeric(), sec = as.numeric(), x = as.numeric(), y = as.numeric(), n.w.ratio = as.numeric())
 
     } else {
 
@@ -816,13 +837,16 @@ if(nrow(.filter) < 1){
 
 
   dbscan <- dbscan::dbscan(data[, c("x", "z"), drop = FALSE], eps = 0.25)
-  data$cluster <- dbscan$cluster
+  data$cluster <- as.factor(dbscan$cluster)
   # plot(data$z, data$x, col = data$cluster, asp =1)
 
   cluster <- data.frame(table(data$cluster))
-  cluster <- cluster[cluster$Freq == max(cluster$Freq),]$Var1
-  cluster <- as.numeric(as.character(cluster))
-  data <- data[data$cluster == cluster,]
+  colnames(cluster) <- c("cluster", "freq")
+  cluster <- cluster[cluster$freq == max(cluster$freq), ]
+
+  data <- merge(data, cluster, by = "cluster", all = FALSE)
+
+  # plot(data$z, data$x, col = data$cluster, asp =1)
 
   mod.x <- stats::lm(data = data, x ~ z)
   mod.y <- stats::lm(data = data, y ~ z)
@@ -830,15 +854,21 @@ if(nrow(.filter) < 1){
   eje$x <- stats::coef(mod.x)[1] + stats::coef(mod.x)[2] * eje$sec
   eje$y <- stats::coef(mod.y)[1] + stats::coef(mod.y)[2] * eje$sec
 
-  #plot(data$z, data$rho, asp = 1)
-  #plot(data$z, data$phi, asp = 1)
-  # plot(data$z, data$x, asp = 1, main = data$tree[1])
-  # abline(mod.x, col = 2)
-  # plot(data$z, data$y, asp = 1, main = data$tree[1])
-  # abline(mod.y, col = 2)
+  n.w.ratio <- as.numeric(.n.w.ratio(data)[2])
+
+  eje$n.w.ratio <- n.w.ratio
+
+  # plot(data$z, data$rho, asp = 1)
+  # plot(data$z, data$phi, asp = 1)
+  # plot(data$z, data$x, asp = 1, xlab = "Z (m)", ylab = "X (m)", main = data$tree[1])
+  # abline(mod.x, col = 2, lwd = 3)
+  # plot(data$z, data$y, asp = 1, xlab = "Z (m)", ylab = "Y (m)", main = eje$n.w.ratio[1])
+  # abline(mod.y, col = 2, lwd = 3)
   }
 
   return(eje)
+
+
 }
 
 
@@ -1084,9 +1114,8 @@ if(nrow(.filter) < 1){
 # Compute radius, k and BAF, and tree variables according to plot design(s) and
 # 'tree.var'. Currently available tree variables: basal area (g) and volume (v)
 
-.tree.calc <- function(tree, plot.design, tree.var
-                       # v.calc = c("coeff", "parab")[2]
-                       ) {
+.tree.calc <- function(tree, plot.design, tree.var,
+                       v.calc = c("coeff", "parab")[2]) {
 
   # Create data.frame where results will be saved
   .col.names <- plot.design
@@ -1124,29 +1153,29 @@ if(nrow(.filter) < 1){
   # Compute basal area (m^2)
   if ("g" %in% colnames(tree)) tree[, "g"] <- (pi / 4) * tree[, "dbh"] ^ 2
 
-  # Compute volume (m^3)
-  if ("v" %in% colnames(tree)) tree[, "v"] <- tree[, "v"]
+  # # Compute volume (m^3)
+  # if ("v" %in% colnames(tree)) tree[, "v"] <- tree[, "v"]
 
   # Compute comercial volume (m^3)
   # if ("v.com" %in% colnames(tree)) tree[, "v.com"] <- tree[, "v.com"]
 
-  # if ("v" %in% colnames(tree)) {
-  #
-  #   if (v.calc == "coeff") {
-  #
-  #     # Coefficient of 0.45
-  #     tree[, "v"] <- (pi / 4) * tree[, "dbh"] ^ 2 * tree[, "h"] * 0.45
-  #
-  #   } else if (v.calc == "parab") {
-  #
-  #     # Paraboloid
-  #     tree[, "v"] <- pi * (tree[, "h"] ^ 2 / 2) *
-  #       ((tree[, "dbh"] / 2) ^ 2 / (tree[, "h"] - 1.3) ^ 2)
-  #
-  #   } else
-  #     stop("Argument for tree volume calculation must be 'coeff' or 'parab'.")
-  #
-  # }
+  if ("v" %in% colnames(tree)) {
+
+    if (v.calc == "coeff") {
+
+      # Coefficient of 0.45
+      tree[, "v"] <- (pi / 4) * tree[, "dbh"] ^ 2 * tree[, "h"] * 0.45
+
+    } else if (v.calc == "parab") {
+
+      # Paraboloid
+      tree[, "v"] <- pi * (tree[, "h"] ^ 2 / 2) *
+        ((tree[, "dbh"] / 2) ^ 2 / (tree[, "h"] - 1.3))
+
+    } else
+      stop("Argument for tree volume calculation must be 'coeff' or 'parab'.")
+
+  }
 
   return(tree)
 
@@ -1696,8 +1725,16 @@ if(nrow(.filter) < 1){
 
   # Define a list containing mandatory trees' database(s) according to 'function
   # case'. Currently available 'function cases': 'sim', 'metr' and 'est'
-  .funct <- list(sim = c(field = "field", tls = "TLS"), metr = c(tls = "TLS"),
-                 est = c(tls = "TLS"))
+  if(is.null(tree.field))
+    .funct <- list(sim = c(field = "field", tls = "TLS"), metr = c(tls = "TLS"),
+                   est = c(tls = "TLS"))
+
+  else {
+
+   .funct <- list(sim = c(field = "field", tls = "TLS"), metr = c(field = "field", tls = "TLS"),
+                  est = c(tls = "TLS"))
+  }
+
 
   # Define a character vector containing index name (radius, k or BAF) for each
   # available plot design. Currently available plot designs: 'fixed.area',
@@ -1808,7 +1845,7 @@ if(nrow(.filter) < 1){
 
   # Define available calculations for trees volume. Currently available
   # calculations: 'coeff' and 'parab'
-  # .v.calc <- c("coeff", "parab")
+  .v.calc <- c("coeff", "parab")
 
   # Define values by default for certain columns in 'plot.parameters'
   .plot.parameters <- data.frame(radius.incr = 0.1, k.incr = 1, BAF.incr = 0.1,
@@ -1835,8 +1872,8 @@ if(nrow(.filter) < 1){
                                 val = names(.scan.approach))
 
   # 'v.calc' must be a character string indicating how to calculate trees volume
-  # v.calc <- .check.class(x = v.calc, x.class = "character", name = "v.calc",
-  #                        n = 1, val = .v.calc)
+  v.calc <- .check.class(x = v.calc, x.class = "character", name = "v.calc",
+                         n = 1, val = .v.calc)
 
   # 'dbh.min', 'h.min' and 'max.dist' must be positive numeric values
   for (.i in c("dbh.min", "h.min", "max.dist")) {
@@ -1935,8 +1972,8 @@ if(nrow(.filter) < 1){
   # 'var.metr' must be a list with one or two elements named 'tls' and 'field'
   var.metr <- .check.class(x = var.metr, x.class = class(.var.metr),
                            name = 'var.metr', n = Inf)
-  if (length(var.metr) != length(.var.metr))
-    stop("'var.metr' must have length equal to ", length(.var.metr), ".")
+  # if (length(var.metr) != length(.var.metr))
+  #   stop("'var.metr' must have length equal to ", length(.var.metr), ".")
   .miss <- names(.var.metr)[! names(.var.metr) %in% names(var.metr)]
   if (length(.miss) > 0)
     stop("Element(s) named ", .quot.past(.miss), " is(are) missing in ",
@@ -2627,8 +2664,7 @@ if(nrow(.filter) < 1){
                 colnames(.col.mand) %in% "v"] <- TRUE
       .col.mand <- colnames(.col.mand)[apply(.col.mand, 2, any)]
       .tree <- .tree.calc(tree = .tree, plot.design = .plot.design[plot.design],
-                          tree.var = .col.mand)
-                          # v.calc = v.calc)
+                          tree.var = .col.mand, v.calc = v.calc)
 
       # Compute angular aperture (TLS data)
       if (.j == "tls" & all(c("phi.left", "phi.right") %in% colnames(.tree))) {
@@ -2665,6 +2701,7 @@ if(nrow(.filter) < 1){
           suppressMessages(vroom::vroom(file.path(dir.data, .id[.i, "file"]),
                                         col_select = c("x", "y", "z", "rho", "r"),
                                         progress = FALSE))
+        .data.tls <- as.matrix(.data.tls)
 
         # Discard points according to 'max.dist'
         .inval <- which(.data.tls[, "rho"] > max.dist)
@@ -2680,9 +2717,8 @@ if(nrow(.filter) < 1){
 
         # Order .data.tls by rho, select columns required for calculations
         # below, and convert to matrix
-        .data.tls <- as.matrix(.data.tls)[order(.data.tls[, "rho"],
-                                                decreasing = FALSE),
-                                          c("z", "rho", "r"), drop = FALSE]
+        .data.tls <- .data.tls[order(.data.tls[, "rho"], decreasing = FALSE),
+                               c("z", "rho", "r"), drop = FALSE]
 
       }
 

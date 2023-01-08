@@ -9,7 +9,6 @@ dir.data <- system.file("data", package="FORTLS")
 setwd(dir.data)
 load("Rioja.data.RData")
 tree.list <- Rioja.data$tree.tls
-dir.data <- system.file("exdata", package="FORTLS")
 
 library(FORTLS)
 
@@ -36,19 +35,20 @@ head(tree.ds$par)
 head(tree.ds$AIC)
 
 ## ----include=FALSE------------------------------------------------------------
+dir.data <- system.file("exdata", package="FORTLS")
 metrics <- read.csv(paste(dir.data, "metrics.variables.fixed.area.plot.csv", sep = "/"))
 
 ## ----eval=FALSE, include=TRUE-------------------------------------------------
-#  metrics[1:10, -c(3:36)]
+#  metrics[1:6, -c(3:36)]
 
 ## ----echo=FALSE---------------------------------------------------------------
-kableExtra::scroll_box(kable_input = kableExtra::kable(metrics[1:10, -c(3:36)], format = "html"), 
+kableExtra::scroll_box(kable_input = kableExtra::kable(metrics[1:6, -c(3:36)], format = "html"), 
                        width = "100%")
 
 ## ----eval=FALSE, include=TRUE-------------------------------------------------
-#  metrics[1:10, 1:36]
+#  metrics[1:6, 1:36]
 
 ## ----echo=FALSE---------------------------------------------------------------
-kableExtra::scroll_box(kable_input = kableExtra::kable(metrics[1:10, 1:36], format = "html"), 
+kableExtra::scroll_box(kable_input = kableExtra::kable(metrics[1:6, 1:36], format = "html"), 
                        width = "100%")
 

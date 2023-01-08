@@ -14,16 +14,19 @@ tree.detection.several.plots(las.list, id = NULL, file = NULL,
                              scan.approach = "single",
                              pcd.red = NULL, normalized = NULL,
                              x.center = NULL, y.center = NULL,
+                             x.side = NULL, y.side = NULL,
                              max.dist = NULL, min.height = NULL, max.height = 50,
                              algorithm.dtm = "knnidw", res.dtm = 0.2,
                              csf = list(cloth_resolution = 0.5),
                              RGB = NULL,
 
+                             single.tree = NULL,
                              dbh.min = 4, dbh.max = 200, h.min = 1.3,
                              ncr.threshold = 0.1,
                              tls.resolution = NULL, tls.precision = NULL,
                              stem.section = NULL, breaks = NULL,
-                             d.top = NULL,
+                             slice = 0.1, understory = NULL, bark.roughness = 2,
+                             den.type = 1, d.top = NULL,
 
                              plot.attributes = NULL,
 
@@ -47,6 +50,10 @@ tree.detection.several.plots(las.list, id = NULL, file = NULL,
 
   \item{y.center}{Planimetric y center coordinate of point cloud data.}
 
+  \item{x.side}{x-side (m) of the plot when the plot is square or rectangular.}
+
+  \item{y.side}{y-side (m) of the plot when the plot is square or rectangular.}
+
   \item{max.dist}{Optional maximum horizontal distance (m) considered from the plot centre. All points farther than \code{max.dist} will be discarded after the normalization process. If this argument is not specified by the user, it will be set to NULL by default and, as a consequence, all points will be used in processing, with \code{max.dist} representing the farthest point.}
 
   \item{min.height}{Optional minimum height (m) considered from ground level. All points below \code{min.height} will be discarded after the normalization process. If this argument is not specified by the user, it will be set to NULL by default and, as a consequence, all points will be used in processing, with \code{min.height} representing the lowest point.}
@@ -64,6 +71,8 @@ tree.detection.several.plots(las.list, id = NULL, file = NULL,
   \item {\code{cloth_resolution}}: by default 0.5.}
 
   \item{RGB}{Logical parameter useful when point clouds are colorized, thus including values of RGB colors. It is based on the Green Leaf Algorithm (GLA) (see \sQuote{Details}).}
+
+  \item{single.tree}{Optional argument to indicate if there is only one tree.}
 
   \item{dbh.min}{Optional minimum \emph{dbh} (cm) considered for detecting trees. By default it will be set at 4 cm.}
 
@@ -89,9 +98,17 @@ tree.detection.several.plots(las.list, id = NULL, file = NULL,
 
   \item{tls.precision}{Optional argument indicating the average point cloud precision in cm.}
 
+  \item{stem.section}{Section free of noise (shurb, branches, etc.) considered to detect trees. If not specified, an automatic internal algorithm will be applied (see \sQuote{Details}).}
+
   \item{breaks}{Height above ground level (m) of slices considered for detecting trees. By default it will be considered all possible sections from 0.1 m to maximum height by 0.3 m intervals (+/- 5 cm).}
 
-  \item{stem.section}{Section free of noise (shurb, branches, etc.) considered to detect trees. If not specified, an automatic internal algorithm will be applied (see \sQuote{Details}).}
+  \item{slice}{Slice width considered for detecting trees. By default it will be considered as 0.1 m.}
+
+  \item{understory}{Optional argument to indicate if there is dense understory vegetation.}
+
+  \item{bark.roughness}{Bark roughness established in 3 degrees (1 < 2 < 3). By default it will be considered as 2.}
+
+  \item{den.type}{Numeric argument indicating the dendrometic type used to estimate volumen when there are not sections enough to fit a taper equation. Dendrometrics types available are the following: cylinder = 0, paraboloid = 1 (by default), cone = 2 and neiloid = 3.}
 
   \item{d.top}{Top stem diameter (cm) considered to estimate commercial timber volume.}
 
@@ -140,11 +157,11 @@ dir.result <- getwd()
 
 # Loading example data (LAZ files) to dir.data
 
-download.file("https://www.dropbox.com/s/j48chrbngwoma6y/Galicia_multi_scan.laz?dl=1",
+download.file("https://www.dropbox.com/s/2nem6tfbsw7eyd7/Galicia_multi_scan.laz?dl=1",
               destfile = file.path(dir.data, "Galicia_multi_scan.laz"),
               mode = "wb")
 
-download.file("https://www.dropbox.com/s/ypar7fwqcht8aw6/Go_Fagus_SLAM.laz?dl=1",
+download.file("https://www.dropbox.com/s/7pnzxsjf8d2x84f/Go_Fagus_SLAM.laz?dl=1",
               destfile = file.path(dir.data, "Go_Fagus_SLAM.laz"),
               mode = "wb")
 

@@ -5,15 +5,18 @@ tree.detection.several.plots <- function(las.list, id = NULL, file = NULL,
 
                                          pcd.red = NULL, normalized = NULL,
                                          x.center = NULL, y.center = NULL,
+                                         x.side = NULL, y.side = NULL,
                                          max.dist = NULL, min.height = NULL, max.height = 50,
                                          algorithm.dtm = "knnidw", res.dtm = 0.2, csf = list(cloth_resolution = 0.5),
                                          RGB = NULL,
 
+                                         single.tree = NULL,
                                          dbh.min = 4, dbh.max = 200, h.min = 1.3,
                                          ncr.threshold = 0.1,
                                          tls.resolution = NULL, tls.precision = NULL,
                                          stem.section = NULL, breaks = NULL,
-                                         d.top = NULL,
+                                         slice = 0.1, understory = NULL, bark.roughness = 2,
+                                         den.type = 1, d.top = NULL,
                                          plot.attributes = NULL,
 
                                          dir.data = NULL, save.result = TRUE, dir.result = NULL){
@@ -88,7 +91,9 @@ tree.detection.several.plots <- function(las.list, id = NULL, file = NULL,
 
                                               stem.section = stem.section, breaks = breaks,
 
-                                              d.top = d.top,
+                                              slice = slice, understory = understory, bark.roughness = bark.roughness,
+
+                                              den.type = den.type, d.top = d.top,
 
                                               plot.attributes = plot.attributes,
 
@@ -96,7 +101,7 @@ tree.detection.several.plots <- function(las.list, id = NULL, file = NULL,
 
     if(scan.approach == "multi"){
 
-    .tree.tls.i <- tree.detection.multi.scan(data = .data,
+    .tree.tls.i <- tree.detection.multi.scan(data = .data, single.tree = single.tree,
 
                                              dbh.min = dbh.min, dbh.max = dbh.max, h.min = h.min,
 
@@ -106,7 +111,9 @@ tree.detection.several.plots <- function(las.list, id = NULL, file = NULL,
 
                                              stem.section = stem.section, breaks = breaks,
 
-                                             d.top = d.top,
+                                             slice = slice, understory = understory, bark.roughness = bark.roughness,
+
+                                             den.type = den.type, d.top = d.top,
 
                                              plot.attributes = plot.attributes,
 
