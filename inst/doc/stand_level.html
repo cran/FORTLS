@@ -577,13 +577,13 @@ factor (BAF) respectively.</p>
 <p>In order to calculate metrics and variables at stand level, the
 function <strong><code>metrics.variables</code></strong> is applied as
 follows:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>metrics <span class="ot">&lt;-</span> <span class="fu">metrics.variables</span>(<span class="at">tree.tls =</span> tree.list, </span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tree.ds =</span> tree.ds, <span class="at">tree.field =</span> tree.field,</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">plot.design =</span> <span class="fu">c</span>(<span class="st">&quot;fixed.area&quot;</span>, <span class="st">&quot;k.tree&quot;</span>, <span class="st">&quot;angle.count&quot;</span>),</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">plot.parameters =</span> <span class="fu">data.frame</span>(<span class="at">radius =</span> <span class="dv">10</span>, <span class="at">k =</span> <span class="dv">10</span>, <span class="at">BAF =</span> <span class="dv">1</span>),</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">scan.approach =</span> <span class="st">&quot;single&quot;</span>, <span class="at">var.metr =</span> <span class="cn">NULL</span>,</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dbh.min =</span> <span class="dv">4</span>, <span class="at">h.min =</span> <span class="fl">1.3</span>, <span class="at">max.dist =</span> <span class="cn">Inf</span>, </span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">dir.data =</span> dir.data, <span class="at">save.result =</span> <span class="cn">FALSE</span>, <span class="at">dir.result =</span> <span class="cn">NULL</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>metrics <span class="ot">&lt;-</span> <span class="fu">metrics.variables</span>(<span class="at">tree.tls =</span> tree.list, </span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>                  <span class="at">tree.ds =</span> tree.ds, <span class="at">tree.field =</span> tree.field,</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>                  <span class="at">plot.design =</span> <span class="fu">c</span>(<span class="st">&quot;fixed.area&quot;</span>, <span class="st">&quot;k.tree&quot;</span>, <span class="st">&quot;angle.count&quot;</span>),</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>                  <span class="at">plot.parameters =</span> <span class="fu">data.frame</span>(<span class="at">radius =</span> <span class="dv">10</span>, <span class="at">k =</span> <span class="dv">10</span>, <span class="at">BAF =</span> <span class="dv">1</span>),</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>                  <span class="at">scan.approach =</span> <span class="st">&quot;single&quot;</span>, <span class="at">var.metr =</span> <span class="cn">NULL</span>,</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>                  <span class="at">dbh.min =</span> <span class="dv">4</span>, <span class="at">h.min =</span> <span class="fl">1.3</span>, <span class="at">max.dist =</span> <span class="cn">Inf</span>, </span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>                  <span class="at">dir.data =</span> dir.data, <span class="at">save.result =</span> <span class="cn">FALSE</span>, <span class="at">dir.result =</span> <span class="cn">NULL</span>)</span></code></pre></div>
 <p>The input data frame is introduced in
 <strong><code>tree.tls</code></strong> and should contain information
 about the trees detected from TLS based data e.g., the output data frame
@@ -617,9 +617,9 @@ mentioned function) can be introduced in
 to <code>NULL</code> and metrics using distance sampling corrections
 will not be calculated. The <code>distance.sampling</code> is applied as
 follows:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>tree.ds <span class="ot">&lt;-</span> <span class="fu">distance.sampling</span>(<span class="at">tree.tls =</span> tree.list,</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                             <span class="at">id.plots =</span> <span class="cn">NULL</span>,</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">strata.attributes =</span> <span class="cn">NULL</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>tree.ds <span class="ot">&lt;-</span> <span class="fu">distance.sampling</span>(<span class="at">tree.tls =</span> tree.list,</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>                             <span class="at">id.plots =</span> <span class="cn">NULL</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>                             <span class="at">strata.attributes =</span> <span class="cn">NULL</span>)</span></code></pre></div>
 <p>The <strong><code>distance.sampling</code></strong> function computes
 the probability of detection of trees depending on their distance to the
 TLS device. Detection functions are fitted to the histogram representing
@@ -649,26 +649,26 @@ detection functions. The columns <code>P.hn</code> and
 half normal function without and with <span class="math inline">\(dbh\)</span> as covariate, while <code>P.hr</code>
 and <code>P.hr.cov</code> contain the probabilities according to the
 hazard rate function without and with covariate respectively.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tree.ds<span class="sc">$</span>tree)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   stratum id tree     P.hn  P.hn.cov      P.hr  P.hr.cov</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1       1  1    1 0.922808 0.9293580 0.9388107 0.9519734</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2       1  1    2 0.922808 0.8922843 0.9388107 0.9199997</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3       1  1    3 0.922808 0.9146826 0.9388107 0.9389643</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4       1  1    4 0.922808 0.9017652 0.9388107 0.9278849</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5       1  1    5 0.922808 0.9277925 0.9388107 0.9505678</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6       1  1    6 0.922808 0.9424095 0.9388107 0.9637861</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">head</span>(tree.ds<span class="sc">$</span>tree)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt;   stratum id tree     P.hn  P.hn.cov      P.hr  P.hr.cov</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; 1       1  1    1 0.922808 0.9293580 0.9388107 0.9519734</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; 2       1  1    2 0.922808 0.8922843 0.9388107 0.9199997</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; 3       1  1    3 0.922808 0.9146826 0.9388107 0.9389643</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; 4       1  1    4 0.922808 0.9017652 0.9388107 0.9278849</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt; 5       1  1    5 0.922808 0.9277925 0.9388107 0.9505678</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt; 6       1  1    6 0.922808 0.9424095 0.9388107 0.9637861</span></span></code></pre></div>
 <p>The data frame <strong><code>par</code></strong> shows the parameters
 of the detection functions and <strong><code>AIC</code></strong> the
 Akaike information criterion (AIC) for every detection function fit.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tree.ds<span class="sc">$</span>par)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              P.hn.scale P.hn.cov.scale.intercept P.hn.cov.dbh P.hr.scale</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; X.Intercept.   35.84341                 64.17593    -2.231185   21.85271</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              P.hr.shape P.hr.cov.scale.intercept P.hr.cov.dbh P.hr.cov.shape</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; X.Intercept.   3.544516                 26.38362   -0.7110327       3.832857</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tree.ds<span class="sc">$</span>AIC)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;       P.hn P.hn.cov     P.hr P.hr.cov</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 3375.162 3376.521 3374.114 3375.123</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">head</span>(tree.ds<span class="sc">$</span>par)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt;              P.hn.scale P.hn.cov.scale.intercept P.hn.cov.dbh P.hr.scale</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; X.Intercept.   35.84341                 64.17593    -2.231185   21.85271</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt;              P.hr.shape P.hr.cov.scale.intercept P.hr.cov.dbh P.hr.cov.shape</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; X.Intercept.   3.544516                 26.38362   -0.7110327       3.832857</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">head</span>(tree.ds<span class="sc">$</span>AIC)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt;       P.hn P.hn.cov     P.hr P.hr.cov</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; 1 3375.162 3376.521 3374.114 3375.123</span></span></code></pre></div>
 </div>
 <div id="additional-information-about-trees-through-field-data" class="section level4">
 <h4>Additional information about trees through field data</h4>
@@ -755,7 +755,7 @@ directory). The .csv files (without row names) will be created using the
 </div>
 <div id="stand-level-metrics" class="section level3">
 <h3>Stand-level metrics</h3>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>metrics[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="sc">-</span><span class="fu">c</span>(<span class="dv">3</span><span class="sc">:</span><span class="dv">36</span>)]</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>metrics[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="sc">-</span><span class="fu">c</span>(<span class="dv">3</span><span class="sc">:</span><span class="dv">36</span>)]</span></code></pre></div>
 <div style="border: 1px solid #ddd; padding: 5px; overflow-x: scroll; width:100%; ">
 <table>
 <thead>
@@ -3221,7 +3221,7 @@ the spherical coordinates (<code>weibull_c.z/rho/r</code>,
 </div>
 <div id="stand-level-variables" class="section level3">
 <h3>Stand-level variables</h3>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>metrics[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">36</span>]</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>metrics[<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">36</span>]</span></code></pre></div>
 <div style="border: 1px solid #ddd; padding: 5px; overflow-x: scroll; width:100%; ">
 <table>
 <thead>
