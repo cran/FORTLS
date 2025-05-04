@@ -1,7 +1,7 @@
-a0b51150c5723e9412c879551d9c55a1 *DESCRIPTION
+79722a4a12170d9d4967d231dc679476 *DESCRIPTION
 197932186b18ffbcf9ce795028bd37cb *NAMESPACE
 71a9a3d4f4eb56875e981728cc234767 *R/RcppExports.R
-baac7e7850197246c6959a35d11adefa *R/auxiliary.functions.R
+ed2bf42d67336f6476947dba63a0fba1 *R/auxiliary.functions.R
 aea77928cba1c7863491c5754ec3d184 *R/correlations.R
 548c8ec9854da0d811e4b45d78145786 *R/distance.sampling.R
 708b79c71ba19b9287e84e8e99944281 *R/estimation.plot.size.R
@@ -20,7 +20,7 @@ c4976fb276aa35c3165303b4365ed64d *R/section.functions.R
 5c5a2a0bd9d4fd52dba067e09ad86e08 *R/tree.detection.several.plots.R
 c5f266b5693d3fbd9e0ddb9c05e493ec *R/tree.detection.single.scan.R
 1f673fb4b7c49fe14691fe7c094c1705 *README.md
-3dede1a07efb3306894b44ff3a2eeecb *build/partial.rdb
+fb898c0affda362a7117d9a70b741ba7 *build/partial.rdb
 6b2f6dc2a1491aa7181b62f57e07f6fc *build/vignette.rds
 a365c0b8c83d86ab0b27c03c3a278458 *data/Rioja.data.RData
 da1c246be7f6503592ab2ffb58faa06e *data/Rioja.simulations.RData
@@ -28,7 +28,7 @@ eefeee3d39b15998ce14b043f22ca48a *data/datalist
 19b6d9ec9876e74ea899ebe6eddf6ee3 *inst/CITATION
 3de642d97e0430637a2e4e6df72c6cf7 *inst/doc/plot_design_optimization.R
 c79b8f41dc481f60478af36d105d4077 *inst/doc/plot_design_optimization.Rmd
-261dccec07feef0ea7bee866d2cfe337 *inst/doc/plot_design_optimization.html
+cca6b6a6975c70ef8403a21ab96e388b *inst/doc/plot_design_optimization.html
 deb808a050fe2a482af2b611973bc854 *inst/doc/stand_level.R
 d739209e3b447f2bc64b4fecc682d3e7 *inst/doc/stand_level.Rmd
 a76a7e62ebdafc9c5c1485e29ccca8d8 *inst/doc/stand_level.html
