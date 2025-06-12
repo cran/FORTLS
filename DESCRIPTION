@@ -1,8 +1,8 @@
 Package: FORTLS
 Title: Automatic Processing of Terrestrial-Based Technologies Point
         Cloud Data for Forestry Purposes
-Version: 1.5.2
-Date: 2025-05-03
+Version: 1.5.3
+Date: 2025-06-10
 Authors@R: c(
     person("Juan Alberto", "Molina-Valero", role = c("aut", "cph", "cre"),
     email = "jamolinavalero@gmail.com"),
@@ -37,6 +37,6 @@ RoxygenNote: 7.3.2
 VignetteBuilder: knitr
 StagedInstall: yes
 NeedsCompilation: yes
-Packaged: 2025-05-03 18:17:19 UTC; JUAN
+Packaged: 2025-06-12 04:57:21 UTC; jamol
 Repository: CRAN
-Date/Publication: 2025-05-04 12:22:15 UTC
+Date/Publication: 2025-06-12 05:50:02 UTC
