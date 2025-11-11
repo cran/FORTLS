@@ -17,12 +17,13 @@ tree.detection.several.plots <- function(las.list, id.list = NULL, file = NULL,
                                          tls.resolution = NULL, tls.precision = NULL,
                                          stem.section = c(0.7, 3.5), stem.range = NULL, breaks = NULL,
                                          slice = 0.1, understory = NULL, bark.roughness = 1,
-                                         den.type = 1, d.top = NULL,
+                                         den.type = 1, d.mer = NULL,
                                          plot.attributes = NULL, plot = NULL,
 
                                          threads = 1,
 
-                                         dir.data = NULL, save.result = TRUE, dir.result = NULL){
+                                         dir.data = NULL, save.result = TRUE, dir.result = NULL,
+                                         save.las = NULL){
 
 
   # Obtaining working directory for loading files
@@ -99,11 +100,15 @@ tree.detection.several.plots <- function(las.list, id.list = NULL, file = NULL,
 
                        voxel_size = voxel_size,
 
+                       threads = threads,
+
                        scan.approach = scan.approach,
 
                        id = .id, file = .file, plot = NULL,
 
-                       dir.data = dir.data, save.result = save.result, dir.result = dir.result)
+                       dir.data = dir.data, save.result = save.result, dir.result = dir.result,
+
+                       save.las = save.las)
 
     if(!is.null(pcd.red))
       .data <- .data[.data$prob.selec == 1, ]
@@ -127,7 +132,7 @@ tree.detection.several.plots <- function(las.list, id.list = NULL, file = NULL,
 
                                               slice = slice, understory = understory, bark.roughness = bark.roughness,
 
-                                              den.type = den.type, d.top = d.top,
+                                              den.type = den.type, d.mer = d.mer,
 
                                               plot.attributes = plot.attributes, plot = plot,
 
@@ -156,7 +161,7 @@ tree.detection.several.plots <- function(las.list, id.list = NULL, file = NULL,
 
                                              slice = slice, understory = understory, bark.roughness = bark.roughness,
 
-                                             den.type = den.type, d.top = d.top,
+                                             den.type = den.type, d.mer = d.mer,
 
                                              plot.attributes = plot.attributes, plot = plot,
 

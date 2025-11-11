@@ -14,7 +14,7 @@ tree.field <- Rioja.data$tree.field
 dir.data <- system.file("exdata", package="FORTLS")
 library(FORTLS)
 
-## ----fig.height=7, fig.width=7, fig.align = "center", message=FALSE, warning=FALSE----
+## ----fig.height=7, fig.width=7, fig.align = "center", message=FALSE, warning=FALSE,fig.alt = "Line charts output obtained with the estimation.plot.size function"----
 estimation.plot.size(tree.tls = tree.tls,
                      plot.parameters = data.frame(radius.max = 25, k.max = 50, BAF.max = 4),
                      dbh.min = 4,

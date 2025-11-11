@@ -18,6 +18,8 @@ Get the lat stable version of FORTLS from GitHub (included in the master branch)
 
 ```r
 remotes::install_github("Molina-Valero/FORTLS", ref = "devel", dependencies = TRUE)
+library(FORTLS)
+install_fortls_python_deps()
 ```
 
 # Taller de manejo de nubes de puntos forestales - 9CFE
@@ -31,6 +33,7 @@ remotes::install_github("Molina-Valero/FORTLS", ref = "devel", dependencies = TR
 ```r
 install.packages("FORTLS")
 library(FORTLS)
+install_fortls_python_deps()
 ```
 
 ## Establecimiento del directorio de trabajo
@@ -71,7 +74,7 @@ understory: argumento opcional para indicar si hay vegetación densa en el sotob
 
 ```r
 tree.tls <- tree.detection.multi.scan(data = pcd,
-                                      understory = TRUE)
+                                      threads = parallel::detectCores()-1)
 ```
 
 ## Variables de masa (o dasométricas)
