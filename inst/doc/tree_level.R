@@ -24,7 +24,7 @@ pcd.single <- normalize(las = "PinusRadiata.laz",
                         x.center = 0, y.center = 0,
                         max.dist = 10, 
                         scan.approach = "single",
-                        threads = parallel::detectCores())
+                        threads = 2)
 
 ## ----eval = FALSE, include=FALSE----------------------------------------------
 # head(pcd.single)
@@ -38,7 +38,7 @@ kableExtra::scroll_box(kable_input = kableExtra::kable(head(pcd.single), format 
 # 
 # tree.list.single.tls <- tree.detection.single.scan(data = pcd.single,
 #                                                    tls.resolution = tls.resolution,
-#                                                    threads = parallel::detectCores())
+#                                                    threads = 2)
 
 ## ----eval = FALSE, include=FALSE----------------------------------------------
 # head(tree.list.single.tls)
@@ -53,11 +53,11 @@ kableExtra::scroll_box(kable_input = kableExtra::kable(head(tree.list.single.tls
 #                        id = "PiceaAbies",
 #                        x.center = 0, y.center = 0,
 #                        scan.approach = "multi",
-#                        threads = parallel::detectCores())
+#                        threads = 2)
 # 
 # tree.list.multi.tls <- tree.detection.multi.scan(data = pcd.multi,
 #                                                  d.mer = 20,
-#                                                  threads = parallel::detectCores())
+#                                                  threads = 2)
 
 ## ----eval = FALSE, include=TRUE-----------------------------------------------
 # head(tree.list.multi.tls)
@@ -84,5 +84,5 @@ kableExtra::scroll_box(kable_input = kableExtra::kable(head(tree.list.multi.tls)
 #                                          center.coord = center.coord,
 #                                          tls.resolution = list(point.dist = 7.67, tls.dist = 10),
 #                                          max.dist = 7.5,
-#                                          threads = parallel::detectCores())
+#                                          threads = 2)
 

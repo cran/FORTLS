@@ -555,6 +555,13 @@ tree.detection.multi.scan <- function(data, single.tree = NULL,
   for (i in unique(.filter$tree)) {
 
     .dat <- .filter[which(.filter$tree == i), ]
+
+    if(nrow(.dat) < 2)
+      next
+
+    if(suppressWarnings(min(diff(.dat$sec, lag = 2), na.rm = TRUE)) > 0.6)
+      next
+
     .dat <- .dat[order(abs(.dat$dif)), ]
 
     .sec.x <- .dat$center.x[nrow(.dat)]
